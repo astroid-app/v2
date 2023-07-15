@@ -1,0 +1,37 @@
+{
+  Delete this before starting
+
+  "config": {
+    "self-user": false,
+    "webhooks": {
+      "discord": "",
+      "guilded": ""
+    },
+    "channels": {
+      "discord": ,
+      "guilded": ""
+    },
+    "logs": {
+      "discord": null,
+      "guilded": null
+    },
+    "blacklist": [
+      null
+    ]
+  },
+  "meta": {
+    "trigger": false,
+    "sender": null,
+    "message": {
+      "author": {
+        "name": null,
+        "avatar": null,
+        "id": null
+      },
+      "content": null,
+      "attachments": [
+        null
+      ]
+    }
+  }
+}
