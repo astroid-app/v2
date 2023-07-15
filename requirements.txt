@@ -1,0 +1,5 @@
+nextcord
+guilded.py
+requests
+fastapi
+uvicorn
