@@ -3,7 +3,7 @@
 Guildcord is the link between discord and guilded.
 
 ### Before setting up
-This code are _**our**_ API and bots that runs on our own servers. If you have problem setting it up or have problems while its running, it is probably a not changed value in the code.
+This code are _**our**_ API and bots that runs on our own servers. If you have problems setting it up or have problems while its running, it is probably a not changed value in the code.
 #### **__There are placeholders e.g. in endpoints or in Bot/guilded_servers which need to be deleted before running the code.__**
 
 ### Setting up
