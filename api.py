@@ -70,7 +70,7 @@ async def post_endpoint(endpoint: int,
                         log_guilded: str = None, channel_discord: int = None, channel_guilded: str = None,
                         blacklist: str = None,
                         trigger: bool = None, sender: str = None, message_author_name: str = None,
-                        message_author_avatar: str = None,
+                        message_author_avatar: str = None, allowed_ids: str=None,
                         message_author_id: str = None, message_content: str = None, message_attachments: list = None,
                         selfuse: bool = None, *, token: str | None):
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -97,7 +97,6 @@ async def post_endpoint(endpoint: int,
                     json_file["config"]["channels"]["guilded"] = channel_guilded
                 if blacklist:
                     print(blacklist)
-                    json_file["config"]["blacklist"].remove(None)
                     json_file["config"]["blacklist"].append(blacklist)
                 if trigger:
                     json_file["meta"]["trigger"] = trigger
@@ -112,6 +111,8 @@ async def post_endpoint(endpoint: int,
                     json_file["meta"]["message"]["author"]["name"] = message_author_name
                 if message_author_avatar:
                     json_file["meta"]["message"]["author"]["avatar"] = message_author_avatar
+                if allowed_ids:
+                    json_file["config"]["allowed-ids"].append(allowed_ids)
                 if message_author_id:
                     json_file["meta"]["message"]["author"]["id"] = message_author_id
                 if message_content:
@@ -197,7 +198,9 @@ def create_endpoint(endpoint: int):
                     "guilded": None
                 },
                 "blacklist": [
-                    None
+                ],
+                "allowed-ids": [
+
                 ]
             },
             "meta": {
