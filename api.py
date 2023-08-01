@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import pathlib
@@ -22,7 +23,7 @@ api = fastapi.FastAPI(
 
 @api.get("/", description="Does nothing. Just sitting there and waiting for requests.")
 def root():
-    return {"status": 200, "message": "Just sittin'. See our docs: http://localhost/docs"}
+    return {"status": 200, "message": "Just sittin'. See our docs: http://guildcord-api.tk/docs"}
 
 
 @api.get("/{endpoint}", description="Get an endpoint.")
@@ -68,9 +69,10 @@ def new_token(endpoint: int, master_token: str):
 async def post_endpoint(endpoint: int,
                         webhook_discord: str = None, webhook_guilded: str = None, log_discord: int = None,
                         log_guilded: str = None, channel_discord: int = None, channel_guilded: str = None,
+                        channel_revolt: str = None,
                         blacklist: str = None,
                         trigger: bool = None, sender: str = None, message_author_name: str = None,
-                        message_author_avatar: str = None, allowed_ids: str=None,
+                        message_author_avatar: str = None, allowed_ids: str = None,
                         message_author_id: str = None, message_content: str = None, message_attachments: list = None,
                         selfuse: bool = None, *, token: str | None):
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -95,6 +97,8 @@ async def post_endpoint(endpoint: int,
                     json_file["config"]["channels"]["discord"] = channel_discord
                 if channel_guilded:
                     json_file["config"]["channels"]["guilded"] = channel_guilded
+                if channel_revolt:
+                    json_file["config"]["channels"]["revolt"] = channel_revolt
                 if blacklist:
                     print(blacklist)
                     json_file["config"]["blacklist"].append(blacklist)
@@ -105,6 +109,8 @@ async def post_endpoint(endpoint: int,
                         json_file["meta"]["sender"] = "discord"
                     elif sender == "guilded":
                         json_file["meta"]["sender"] = "guilded"
+                    elif sender == "revolt":
+                        json_file["meta"]["sender"] = "revolt"
                     else:
                         return fastapi.responses.Response(status_code=400)
                 if message_author_name:
@@ -119,60 +125,130 @@ async def post_endpoint(endpoint: int,
                     json_file["meta"]["message"]["content"] = message_content
                 if message_attachments:
                     json_file["meta"]["message"]["attachments"] = message_attachments
-                try:
-                    file.seek(0)
-                    json.dump(json_file, file)
-                    file.truncate()
-                    file.close()
-                except:
-                    traceback.print_exc()
 
+                file.seek(0)
+                json.dump(json_file, file)
+                file.truncate()
+                file.close()
                 updated_file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
                 updated_json = json.load(updated_file)
                 if not updated_json["config"]["self-user"] is True and updated_json["meta"]["trigger"] is True:
-                    session = aiohttp.ClientSession()
                     sender = updated_json["meta"]["sender"]
+
                     if sender == "discord":
+                        updated_json["meta"]["sender"] = None
+                        session = aiohttp.ClientSession()
+                        updated_json["meta"]["read"]["discord"] = True
                         webhook_url = updated_json["config"]["webhooks"]["guilded"]
                         await guilded.Webhook.from_url(webhook_url, session=session).send(
                             content=updated_json["meta"]["message"]["content"],
                             avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
                             username=updated_json["meta"]["message"]["author"]["name"],
                         )
-                        updated_json["meta"]["message"]["content"] = None
-                        updated_json["meta"]["message"]["author"]["avatar"] = None
-                        updated_json["meta"]["message"]["author"]["name"] = None
-                        updated_json["meta"]["message"]["author"]["id"] = None
-                        updated_json["meta"]["trigger"] = False
-                        updated_json["meta"]["sender"] = None
+                        await session.close()
+                        updated_json["meta"]["read"]["guilded"] = True
+                        if not updated_json["config"]["channels"]["revolt"]:
+                            updated_json["meta"]["read"]["revolt"] = True
+                        if not updated_json["config"]["channels"]["guilded"]:
+                            updated_json["meta"]["read"]["guilded"] = True
                         updated_file.seek(0)
                         json.dump(updated_json, updated_file)
                         updated_file.truncate()
-                        updated_file.close()
 
                     elif sender == "guilded":
+                        updated_json["meta"]["sender"] = None
+                        session = aiohttp.ClientSession()
+                        updated_json["meta"]["read"]["guilded"] = True
                         webhook_url = updated_json["config"]["webhooks"]["discord"]
                         await nextcord.Webhook.from_url(webhook_url, session=session).send(
                             content=updated_json["meta"]["message"]["content"],
                             avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                            username=updated_json["meta"]["message"]["author"]["name"],
+                            username=updated_json["meta"]["message"]["author"]["name"]
                         )
-                        updated_json["meta"]["message"]["content"] = None
-                        updated_json["meta"]["message"]["author"]["avatar"] = None
-                        updated_json["meta"]["message"]["author"]["name"] = None
-                        updated_json["meta"]["message"]["author"]["id"] = None
-                        updated_json["meta"]["trigger"] = False
-                        updated_json["meta"]["sender"] = None
+                        await session.close()
+                        updated_json["meta"]["read"]["discord"] = True
+                        if not updated_json["config"]["channels"]["revolt"]:
+                            updated_json["meta"]["read"]["revolt"] = True
+                        if not updated_json["config"]["channels"]["discord"]:
+                            updated_json["meta"]["read"]["discord"] = True
                         updated_file.seek(0)
                         json.dump(updated_json, updated_file)
                         updated_file.truncate()
-                        updated_file.close()
 
-                    await session.close()
-            else:
+                    elif sender == "revolt":
+                        session = aiohttp.ClientSession()
+                        updated_json["meta"]["read"]["revolt"] = True
+                        discord_webhook_url = updated_json["config"]["webhooks"]["discord"]
+                        await nextcord.Webhook.from_url(discord_webhook_url, session=session).send(
+                            content=updated_json["meta"]["message"]["content"],
+                            avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                            username=updated_json["meta"]["message"]["author"]["name"],
+                        )
+                        updated_json["meta"]["read"]["discord"] = True
+                        guilded_webhook_url = updated_json["config"]["webhooks"]["guilded"]
+                        await guilded.Webhook.from_url(guilded_webhook_url, session=session).send(
+                            content=updated_json["meta"]["message"]["content"],
+                            avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                            username=updated_json["meta"]["message"]["author"]["name"],
+                        )
+                        await session.close()
+                        updated_json["meta"]["read"]["guilded"] = True
+                        if not updated_json["config"]["channels"]["guilded"]:
+                            updated_json["meta"]["read"]["guilded"] = True
+                        if not updated_json["config"]["channels"]["discord"]:
+                            updated_json["meta"]["read"]["discord"] = True
+                        updated_file.seek(0)
+                        json.dump(updated_json, updated_file)
+                        updated_file.truncate()
+
+                    updated_file.close()
+                    while True:
+                        check_file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json",
+                                            "r+")
+                        check_json = json.load(check_file)
+                        if check_json["meta"]["read"]["discord"] == True and check_json["meta"]["read"]["guilded"] == True and check_json["meta"]["read"]["revolt"] == True:
+                            check_json["meta"]["message"]["content"] = None
+                            check_json["meta"]["message"]["author"]["avatar"] = None
+                            check_json["meta"]["message"]["author"]["name"] = None
+                            check_json["meta"]["message"]["author"]["id"] = None
+                            check_json["meta"]["trigger"] = False
+                            check_json["meta"]["sender"] = None
+                            check_json["meta"]["read"]["discord"] = False
+                            check_json["meta"]["read"]["guilded"] = False
+                            check_json["meta"]["read"]["revolt"] = False
+                            check_file.seek(0)
+                            json.dump(check_json, check_file)
+                            check_file.truncate()
+                            check_file.close()
+                            break
+                        check_file.close()
+                        await asyncio.sleep(1)
                 return fastapi.responses.Response(status_code=404)
         else:
             return fastapi.responses.Response(status_code=401)
+    else:
+        return fastapi.responses.Response(status_code=401)
+
+
+
+@api.post("/read/{endpoint}")
+def mark_read(endpoint: int, token: str | None, read_discord: bool = None, read_guilded: bool = None, read_revolt: bool = None):
+    if token == data_token or token == Bot.config.MASTER_TOKEN:
+        file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
+        json_file = json.load(file)
+        if read_discord:
+            json_file["meta"]["read"]["discord"] = True
+        if read_guilded:
+            json_file["meta"]["read"]["guilded"] = True
+        if read_revolt:
+            json_file["meta"]["read"]["revolt"] = True
+        try:
+            file.seek(0)
+            json.dump(json_file, file)
+            file.truncate()
+            file.close()
+        except:
+            traceback.print_exc()
     else:
         return fastapi.responses.Response(status_code=401)
 
@@ -187,11 +263,13 @@ def create_endpoint(endpoint: int):
                 "self-user": False,
                 "webhooks": {
                     "discord": None,
-                    "guilded": None
+                    "guilded": None,
+                    "revolt": None
                 },
                 "channels": {
                     "discord": None,
-                    "guilded": None
+                    "guilded": None,
+                    "revolt": None
                 },
                 "logs": {
                     "discord": None,
@@ -206,6 +284,11 @@ def create_endpoint(endpoint: int):
             "meta": {
                 "trigger": False,
                 "sender": None,
+                "read": {
+                    "discord": False,
+                    "guilded": False,
+                    "revolt": False
+                },
                 "message": {
                     "author": {
                         "name": None,
