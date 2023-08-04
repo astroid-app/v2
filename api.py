@@ -70,7 +70,7 @@ async def post_endpoint(endpoint: int,
                         webhook_discord: str = None, webhook_guilded: str = None, log_discord: int = None,
                         log_guilded: str = None, channel_discord: int = None, channel_guilded: str = None,
                         channel_revolt: str = None,
-                        blacklist: str = None,
+                        blacklist: str = None, sender_channel: str = None,
                         trigger: bool = None, sender: str = None, message_author_name: str = None,
                         message_author_avatar: str = None, allowed_ids: str = None,
                         message_author_id: str = None, message_content: str = None, message_attachments: list = None,
@@ -82,9 +82,9 @@ async def post_endpoint(endpoint: int,
                 file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
                 json_file = json.load(file)
                 if webhook_discord:
-                    json_file["config"]["webhooks"]["discord"] = webhook_discord
+                    json_file["config"]["webhooks"]["discord"].append(webhook_discord)
                 if webhook_guilded:
-                    json_file["config"]["webhooks"]["guilded"] = webhook_guilded
+                    json_file["config"]["webhooks"]["guilded"].append(webhook_guilded)
                 if selfuse is True or selfuse is False:
                     json_file["config"]["self-user"] = selfuse
                 if log_discord:
@@ -94,16 +94,18 @@ async def post_endpoint(endpoint: int,
                     json_file["config"]["logs"]["guilded"] = log_guilded
 
                 if channel_discord:
-                    json_file["config"]["channels"]["discord"] = channel_discord
+                    json_file["config"]["channels"]["discord"].append(channel_discord)
                 if channel_guilded:
-                    json_file["config"]["channels"]["guilded"] = channel_guilded
+                    json_file["config"]["channels"]["guilded"].append(channel_guilded)
                 if channel_revolt:
-                    json_file["config"]["channels"]["revolt"] = channel_revolt
+                    json_file["config"]["channels"]["revolt"].append(channel_revolt)
                 if blacklist:
                     print(blacklist)
                     json_file["config"]["blacklist"].append(blacklist)
                 if trigger:
                     json_file["meta"]["trigger"] = trigger
+                if sender_channel:
+                    json_file["meta"]["sender-channel"] = sender_channel
                 if sender:
                     if sender == "discord":
                         json_file["meta"]["sender"] = "discord"
@@ -132,19 +134,21 @@ async def post_endpoint(endpoint: int,
                 file.close()
                 updated_file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
                 updated_json = json.load(updated_file)
-                if not updated_json["config"]["self-user"] is True and updated_json["meta"]["trigger"] is True:
+                if updated_json["config"]["self-user"] is False:
                     sender = updated_json["meta"]["sender"]
 
                     if sender == "discord":
-                        updated_json["meta"]["sender"] = None
                         session = aiohttp.ClientSession()
                         updated_json["meta"]["read"]["discord"] = True
-                        webhook_url = updated_json["config"]["webhooks"]["guilded"]
-                        await guilded.Webhook.from_url(webhook_url, session=session).send(
-                            content=updated_json["meta"]["message"]["content"],
-                            avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                            username=updated_json["meta"]["message"]["author"]["name"],
-                        )
+                        global webhook_url_g
+                        for channel in updated_json["config"]["channels"]["discord"]:
+                            if str(channel) == updated_json["meta"]["sender-channel"]:
+                                webhook_url_g = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["discord"].index(int(channel))]
+                                await guilded.Webhook.from_url(webhook_url_g, session=session).send(
+                                    content=updated_json["meta"]["message"]["content"],
+                                    avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                                    username=updated_json["meta"]["message"]["author"]["name"]
+                                )
                         await session.close()
                         updated_json["meta"]["read"]["guilded"] = True
                         if not updated_json["config"]["channels"]["revolt"]:
@@ -156,15 +160,17 @@ async def post_endpoint(endpoint: int,
                         updated_file.truncate()
 
                     elif sender == "guilded":
-                        updated_json["meta"]["sender"] = None
                         session = aiohttp.ClientSession()
                         updated_json["meta"]["read"]["guilded"] = True
-                        webhook_url = updated_json["config"]["webhooks"]["discord"]
-                        await nextcord.Webhook.from_url(webhook_url, session=session).send(
-                            content=updated_json["meta"]["message"]["content"],
-                            avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                            username=updated_json["meta"]["message"]["author"]["name"]
-                        )
+                        global webhook_url_d
+                        for channel in updated_json["config"]["channels"]["guilded"]:
+                            if str(channel) == updated_json["meta"]["sender-channel"]:
+                                webhook_url_d = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["guilded"].index(str(channel))]
+                                await nextcord.Webhook.from_url(webhook_url_d, session=session).send(
+                                    content=updated_json["meta"]["message"]["content"],
+                                    avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                                    username=updated_json["meta"]["message"]["author"]["name"]
+                                )
                         await session.close()
                         updated_json["meta"]["read"]["discord"] = True
                         if not updated_json["config"]["channels"]["revolt"]:
@@ -178,19 +184,23 @@ async def post_endpoint(endpoint: int,
                     elif sender == "revolt":
                         session = aiohttp.ClientSession()
                         updated_json["meta"]["read"]["revolt"] = True
-                        discord_webhook_url = updated_json["config"]["webhooks"]["discord"]
-                        await nextcord.Webhook.from_url(discord_webhook_url, session=session).send(
-                            content=updated_json["meta"]["message"]["content"],
-                            avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                            username=updated_json["meta"]["message"]["author"]["name"],
-                        )
+                        global discord_webhook_url
+                        if str(updated_json["meta"]["sender-channel"]) in updated_json["config"]["channels"]["revolt"]:
+                                discord_webhook_url = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["revolt"].index(str(updated_json["meta"]["sender-channel"]))]
+                                await nextcord.Webhook.from_url(discord_webhook_url, session=session).send(
+                                    content=updated_json["meta"]["message"]["content"],
+                                    avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                                    username=updated_json["meta"]["message"]["author"]["name"]
+                                )
                         updated_json["meta"]["read"]["discord"] = True
-                        guilded_webhook_url = updated_json["config"]["webhooks"]["guilded"]
-                        await guilded.Webhook.from_url(guilded_webhook_url, session=session).send(
-                            content=updated_json["meta"]["message"]["content"],
-                            avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                            username=updated_json["meta"]["message"]["author"]["name"],
-                        )
+                        global guilded_webhook_url
+                        if str(updated_json["meta"]["sender-channel"]) in str(updated_json["config"]["channels"]["revolt"]):
+                                guilded_webhook_url = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["revolt"].index(str(updated_json["meta"]["sender-channel"]))]
+                                await guilded.Webhook.from_url(guilded_webhook_url, session=session).send(
+                                    content=updated_json["meta"]["message"]["content"],
+                                    avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                                    username=updated_json["meta"]["message"]["author"]["name"]
+                                )
                         await session.close()
                         updated_json["meta"]["read"]["guilded"] = True
                         if not updated_json["config"]["channels"]["guilded"]:
@@ -213,6 +223,7 @@ async def post_endpoint(endpoint: int,
                             check_json["meta"]["message"]["author"]["id"] = None
                             check_json["meta"]["trigger"] = False
                             check_json["meta"]["sender"] = None
+                            check_json["meta"]["sender-channel"] = None
                             check_json["meta"]["read"]["discord"] = False
                             check_json["meta"]["read"]["guilded"] = False
                             check_json["meta"]["read"]["revolt"] = False
@@ -223,7 +234,8 @@ async def post_endpoint(endpoint: int,
                             break
                         check_file.close()
                         await asyncio.sleep(1)
-                return fastapi.responses.Response(status_code=404)
+                else:
+                    return fastapi.responses.Response(status_code=201, content="This endpoint is used for an self-developed bot.")
         else:
             return fastapi.responses.Response(status_code=401)
     else:
@@ -262,26 +274,25 @@ def create_endpoint(endpoint: int):
             "config": {
                 "self-user": False,
                 "webhooks": {
-                    "discord": None,
-                    "guilded": None,
-                    "revolt": None
+                    "discord": [],
+                    "guilded": [],
+                    "revolt": []
                 },
                 "channels": {
-                    "discord": None,
-                    "guilded": None,
-                    "revolt": None
+                    "discord": [],
+                    "guilded": [],
+                    "revolt": []
                 },
                 "logs": {
                     "discord": None,
-                    "guilded": None
+                    "guilded": None,
+                    "revolt": None
                 },
-                "blacklist": [
-                ],
-                "allowed-ids": [
-
-                ]
+                "blacklist": [],
+                "allowed-ids": []
             },
             "meta": {
+                "sender-channel": None,
                 "trigger": False,
                 "sender": None,
                 "read": {
@@ -296,9 +307,7 @@ def create_endpoint(endpoint: int):
                         "id": None
                     },
                     "content": None,
-                    "attachments": [
-                        None
-                    ]
+                    "attachments": []
                 }
             }
         }
