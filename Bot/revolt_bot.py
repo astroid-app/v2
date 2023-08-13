@@ -20,7 +20,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 
-class Client(revolt.Client):
+class Client(commands.CommandsClient):
     async def on_ready(self):
         await self.edit_status(text="gc!help | Watching your server")
         while True:
@@ -39,6 +39,7 @@ class Client(revolt.Client):
                         author_avatar = endpoint_json["meta"]["message"]["author"]["avatar"]
                         channel_ids_discord = endpoint_json["config"]["channels"]["discord"]
                         channel_ids_guilded = endpoint_json["config"]["channels"]["guilded"]
+                        message_attachments = endpoint_json["meta"]["message"]["attachments"]
                         sender_channel = endpoint_json["meta"]["sender-channel"]
                         global channel_id
                         if str(sender_channel) in channel_ids_guilded:
@@ -57,12 +58,27 @@ class Client(revolt.Client):
                             color = "#fcd705"
                         else:
                             color = "#fc0516"
-                        await channel.send(content=content,
-                                           masquerade=revolt.Masquerade(name=author_name, avatar=author_avatar,
-                                                                        colour=color))
-                        post = requests.post(
-                            f"https://guildcord-api.tk/read/{endpoint}?token={config.MASTER_TOKEN}&read_revolt=true")
-                        post.close()
+                        if message_attachments:
+                            if not content is None:
+                                await channel.send(content=content,
+                                                   masquerade=revolt.Masquerade(name=author_name, avatar=author_avatar,
+                                                                                colour=color))
+                            for attachment in message_attachments:
+                                await channel.send(content=attachment,
+                                                   masquerade=revolt.Masquerade(name=author_name, avatar=author_avatar,
+                                                                                colour=color))
+                            post = requests.post(
+                                f"https://guildcord-api.tk/read/{endpoint}?token={config.MASTER_TOKEN}&read_revolt=true")
+                            post.close()
+                        else:
+                            await channel.send(content=content,
+                                               masquerade=revolt.Masquerade(name=author_name, avatar=author_avatar,
+                                                                            colour=color))
+                            post = requests.post(
+                                f"https://guildcord-api.tk/read/{endpoint}?token={config.MASTER_TOKEN}&read_revolt=true")
+                            post.close()
+                        await asyncio.sleep(2)
+
                 except FileNotFoundError:
                     print("No file found")
                     pass
@@ -79,7 +95,7 @@ class Client(revolt.Client):
                     traceback.print_exc()
             await asyncio.sleep(2)
 
-    async def on_message(self, message):
+    async def on_message(self, message: revolt.Message):
         if message.content.startswith("gc!"):
             global endpoint
             if message.content.startswith("gc!register"):
@@ -109,15 +125,15 @@ class Client(revolt.Client):
                         data = {"discord": endpoint}
                         json.dump(data,
                                   open(
-                                      f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{message.guild.id}.json",
+                                      f"{pathlib.Path(__file__).parent.resolve()}/revolt_servers/{message.server.id}.json",
                                       "x"))
                     except FileExistsError:
                         await message.channel.send(f"Enpoint exists already: https://guildcord-api.tk/{endpoint}")
                         return
-                    webhook = await message.channel.create_webhook(name="Guildcord")
+                    # webhook = await message.channel.create_webhook(name="Guildcord")
                     requests.post(
-                        f"https://guildcord-api.tk/update/{endpoint}?channel_guilded={message.channel.id}&"
-                        f"webhook_guilded={webhook.url}&token={config.MASTER_TOKEN}")
+                        f"https://guildcord-api.tk/update/{endpoint}?channel_revolt={message.channel.id}&"
+                        f"&token={config.MASTER_TOKEN}")
                     await message.channel.send(f"Updated enpoint: https://guildcord-api.tk/{endpoint}")
             if message.content.startswith("gc!help"):
                 embed = revolt.SendableEmbed(title="Guildcord", description="API Docs: https://guildcord-api.tk/docs\n\n"
@@ -135,11 +151,11 @@ class Client(revolt.Client):
                 try:
                     endpoint = int(message.content.replace("gc!set-log ", "").split(" ")[0])
                 except ValueError:
-                    await message.channel.send("Invalid Format: `gc!set-log DISCORD_SERVER_ID GUILDED_CHANNEL_ID`")
+                    await message.channel.send("Invalid Format: `gc!set-log DISCORD_SERVER_ID REVOLT_CHANNEL_ID`")
                     return
                 channelid = message.content.replace("gc!set-log ", "").split(" ")[1]
                 if endpoint == "" or channelid == "":
-                    await message.channel.send("Invalid Format: `gc!set-log DISCORD_SERVER_ID GUILDED_CHANNEL_ID`")
+                    await message.channel.send("Invalid Format: `gc!set-log DISCORD_SERVER_ID REVOLT_CHANNEL_ID`")
                 else:
                     requests.post(
                         f"https://guildcord-api.tk/update/{endpoint}?channel_guilded={message.channel.id}&"
@@ -152,12 +168,12 @@ class Client(revolt.Client):
                     print(endpoint)
                 except ValueError:
                     print(1)
-                    await message.channel.send("Invalid Format: `gc!allow DISCORD_SERVER_ID GUILDED_USER_ID`")
+                    await message.channel.send("Invalid Format: `gc!allow DISCORD_SERVER_ID REVOLT_USER_ID`")
                     return
                 allowid = message.content.replace("gc!allow ", "").split(" ")[1]
                 print(allowid)
                 if endpoint == "" or allowid == "":
-                    await message.channel.send("Invalid Format: `gc!allow DISCORD_SERVER_ID GUILDED_USER_ID`")
+                    await message.channel.send("Invalid Format: `gc!allow DISCORD_SERVER_ID REVOLT_USER_ID`")
                 else:
                     requests.post(
                         f"https://guildcord-api.tk/update/{endpoint}?allowed_ids={allowid}&token={config.MASTER_TOKEN}")
@@ -210,12 +226,27 @@ class Client(revolt.Client):
                             allowed_ids_request.close()
                             if not message.author.bot or message.author.id in allowed_ids:
                                 if not message.attachments:
-                                    post = requests.post(
+                                    requests.post(
                                         f"https://guildcord-api.tk/update/{endpoint}?message_content={message.content}&"
                                         f"message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&"
-                                        f"message_author_id={message.author.id}&trigger=true&sender=revolt&token={config.MASTER_TOKEN}"
-                                        f"&sender_channel={message.channel.id}")
-                                    post.close()
+                                        f"message_author_id={message.author.id}&trigger=true&sender=revolt&token={config.MASTER_TOKEN}&"
+                                        f"sender_channel={message.channel.id}")
+                                if message.attachments:
+                                    if len(message.attachments) == 1:
+                                        requests.post(
+                                            f"https://guildcord-api.tk/update/{endpoint}?message_content={message.content}&"
+                                            f"message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&"
+                                            f"message_author_id={message.author.id}&trigger=true&sender=revolt&token={config.MASTER_TOKEN}"
+                                            f"&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url}/{message.attachments[0].filename}")
+                                    else:
+                                        attachments = ""
+                                        for attachment in message.attachments:
+                                            attachments += f"{attachment.url}/{attachment.filename},"
+                                        requests.post(
+                                            f"https://guildcord-api.tk/update/{endpoint}?message_content={message.content}&"
+                                            f"message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&"
+                                            f"message_author_id={message.author.id}&trigger=true&sender=revolt&token={config.MASTER_TOKEN}"
+                                            f"&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}")
 
                     except:
                         traceback.print_exc()
