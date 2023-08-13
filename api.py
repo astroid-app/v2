@@ -27,8 +27,8 @@ def root():
 
 
 @api.get("/{endpoint}", description="Get an endpoint.")
-def get_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)],
-                 token: Annotated[str, fastapi.Query(max_length=71, min_length=71)] = None):
+def get_endpoint(endpoint: int,
+                 token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     global data_token
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -48,8 +48,8 @@ def get_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_lengt
 
 
 @api.get("/bridges/{endpoint}", description="Get an endpoint.")
-def get_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)],
-                 token: Annotated[str, fastapi.Query(max_length=71, min_length=71)] = None):
+def get_endpoint(endpoint: int,
+                 token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     global data_token
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -81,7 +81,7 @@ def get_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_lengt
 
 
 @api.post("/token/{endpoint}", description="Generate a new token. (Only works with Guildcord-Bot)")
-def new_token(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)],
+def new_token(endpoint: int,
               master_token: Annotated[str, fastapi.Query(max_length=85, min_length=85)]):
     if master_token == Bot.config.MASTER_TOKEN:
         with open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r+") as tokens:
@@ -101,7 +101,7 @@ def new_token(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=1
 
 @api.post("/update/{endpoint}", description="Modify an endpoint.",
           response_description="Endpoint with updated data.")
-async def post_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)],
+async def post_endpoint(endpoint: int,
                         webhook_discord: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
                         webhook_guilded: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
                         webhook_revolt: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
@@ -122,7 +122,7 @@ async def post_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, mi
                         message_content: Annotated[str, fastapi.Query(max_length=1500)] = None,
                         message_attachments: Annotated[str, fastapi.Query(max_length=1550, min_length=50)] = None,
                         selfuse: bool = None,
-                        token: Annotated[str, fastapi.Query(max_length=71, min_length=71)] = None):
+                        token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
@@ -359,8 +359,8 @@ async def post_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, mi
 @api.post("/read/{endpoint}",
           description="Mark the 'meta' as read on the platform(s). "
                       "[Note: Currently only used in the Guildcord Revolt-bot.]")
-def mark_read(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)],
-              token: Annotated[str, fastapi.Query(max_length=71, min_length=71)] = None,
+def mark_read(endpoint: int,
+              token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None,
               read_discord: bool = None,
               read_guilded: bool = None,
               read_revolt: bool = None):
@@ -386,7 +386,7 @@ def mark_read(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=1
 
 @api.post("/create", description="Create an endpoint.",
           response_description="Endpoints data.")
-def create_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)]):
+def create_endpoint(endpoint: int):
     try:
         file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "x")
         data = {
@@ -437,8 +437,8 @@ def create_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_le
 
 
 @api.delete("/delete/{endpoint}", description="Delete an endpoint.")
-def delete_endpoint(endpoint: Annotated[int, fastapi.Query(max_length=25, min_length=10)],
-                    token: Annotated[str, fastapi.Query(max_length=71, min_length=71)] = None):
+def delete_endpoint(endpoint: int,
+                    token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
