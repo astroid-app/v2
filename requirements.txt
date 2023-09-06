@@ -3,3 +3,4 @@ guilded.py
 requests
 fastapi
 uvicorn
+voltage=<0.1.5a8
