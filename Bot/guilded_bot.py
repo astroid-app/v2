@@ -1,6 +1,8 @@
+import asyncio
 import datetime
 import json
 import os
+import threading
 import traceback
 
 import aiohttp
@@ -53,9 +55,9 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
 
 @client.event
 async def on_message(message: guilded.Message):
-    if message.content.startswith("gc!"):
+    if message.content.lower().startswith("gc!"):
         global endpoint
-        if message.content.startswith("gc!register"):
+        if message.content.lower().startswith("gc!register"):
             try:
                 endpoint = int(message.content.replace("gc!register ", ""))
             except ValueError:
@@ -91,7 +93,7 @@ async def on_message(message: guilded.Message):
                     f"https://guildcord-api.tk/update/{endpoint}?channel_guilded={message.channel.id}&"
                     f"webhook_guilded={webhook.url}&token={config.MASTER_TOKEN}")
                 await message.channel.send(f"Updated enpoint: https://guildcord-api.tk/{endpoint}")
-        if message.content.startswith("gc!help"):
+        if message.content.lower().startswith("gc!help"):
             embed = guilded.Embed(title="Guildcord", description="API Docs: https://guildcord-api.tk/docs")
             embed.add_field(name="register",
                             value="Register you server.\nNote: First register your discord server, then guilded.",
@@ -105,7 +107,7 @@ async def on_message(message: guilded.Message):
             embed.add_field(name="add-bridge", value="Add another channel to bridge over.\nNote: Works like `register`",
                             inline=False)
             await message.channel.send(embed=embed)
-        if message.content.startswith("gc!set-log"):
+        if message.content.lower().startswith("gc!set-log"):
             try:
                 endpoint = int(message.content.replace("gc!set-log ", "").split(" ")[0])
             except ValueError:
@@ -120,7 +122,7 @@ async def on_message(message: guilded.Message):
                     f"log_guilded={channelid}&token={config.MASTER_TOKEN}")
                 await message.channel.send(f"Updated enpoint: https://guildcord-api.tk/{endpoint}")
 
-        if message.content.startswith("gc!allow"):
+        if message.content.lower().startswith("gc!allow"):
             try:
                 endpoint = int(message.content.replace("gc!allow ", "").split(" ")[0])
                 print(endpoint)
@@ -137,7 +139,7 @@ async def on_message(message: guilded.Message):
                     f"https://guildcord-api.tk/update/{endpoint}?allowed_ids={allowid}&token={config.MASTER_TOKEN}")
                 await message.channel.send(f"Updated enpoint: https://guildcord-api.tk/{endpoint}")
 
-        if message.content.startswith("gc!add-bridge"):
+        if message.content.lower().startswith("gc!add-bridge"):
             try:
                 endpoint = int(message.content.replace("gc!add-bridge ", ""))
             except ValueError:
@@ -159,10 +161,12 @@ async def on_message(message: guilded.Message):
             endpoint_file = open(f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{message.server.id}.json",
                                  "r")
             endpoint = json.load(endpoint_file)["discord"]
+            print(111)
             if message.channel.id in requests.get(
                     f"https://guildcord-api.tk/{endpoint}?token={config.MASTER_TOKEN}").json()[
                 "config"]["channels"][
                 "guilded"]:
+                print(222)
                 try:
                     blacklist = requests.get(
                         f"https://guildcord-api.tk/{endpoint}?token={config.MASTER_TOKEN}").json()[
@@ -172,6 +176,7 @@ async def on_message(message: guilded.Message):
                             if word.lower() in message.content.lower():
                                 embed = guilded.Embed(title=f"{message.author.name} - Flagged",
                                                       description=message.content, colour=0xf5c400)
+                                await message.delete()
                                 channel = await client.fetch_channel(str(requests.get(
                                     f"https://guildcord-api.tk/{endpoint}?token={config.MASTER_TOKEN}").json()[
                                                                              "config"]["logs"][
@@ -181,18 +186,36 @@ async def on_message(message: guilded.Message):
                         else:
                             pass
                     else:
+                        print(333)
                         allowed_ids = requests.get(
                             f"https://guildcord-api.tk/{endpoint}?token={config.MASTER_TOKEN}").json()[
                             "config"]["allowed-ids"]
                         if not message.author.bot or message.author.id in allowed_ids:
+                            print(444)
                             if not message.attachments:
-                                session = aiohttp.ClientSession()
-                                await session.post(
+                                print(555)
+                                requests.post(
                                     f"https://guildcord-api.tk/update/{endpoint}?message_content={message.content}&"
                                     f"message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&"
-                                    f"message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}"
-                                    f"&sender_channel={message.channel.id}")
-                                await session.close()
+                                    f"message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&"
+                                    f"sender_channel={message.channel.id}")
+                            if message.attachments:
+                                if len(message.attachments) == 1:
+                                    requests.post(
+                                        f"https://guildcord-api.tk/update/{endpoint}?message_content={message.content}&"
+                                        f"message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&"
+                                        f"message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}"
+                                        f"&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}")
+                                else:
+                                    attachments = ""
+                                    for attachment in message.attachments:
+                                        attachments += attachment.url.replace("![]", "").replace("(", "").replace(")",
+                                                                                                                  "")
+                                    requests.post(
+                                        f"https://guildcord-api.tk/update/{endpoint}?message_content={message.content}&"
+                                        f"message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&"
+                                        f"message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}"
+                                        f"&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}")
 
 
                 except:

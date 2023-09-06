@@ -195,7 +195,7 @@ async def delete(interaction: nextcord.Interaction):
     await session.delete(
         f"https://guildcord-api.tk/delete/{interaction.guild.id}?token={config.MASTER_TOKEN}")
     await session.close()
-    await interaction.edit_original_message(content=f"Deleted your endpoint.", ephemeral=True)
+    await interaction.edit_original_message(content=f"Deleted your endpoint.")
 
 
 @client.slash_command(name="set-log", default_member_permissions=8, description="Set logs")
