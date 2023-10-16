@@ -16,7 +16,7 @@ from typing import Annotated
 api = fastapi.FastAPI(
     title="Guildcord API",
     description="Guildcord API for getting and modifying endpoints.",
-    version="2.1.3",
+    version="2.1.4",
 )
 
 
@@ -40,11 +40,12 @@ def get_endpoint(endpoint: int,
             try:
                 return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r"))
             except FileNotFoundError:
-                return fastapi.responses.Response(status_code=404, content="This endpoint does not exist.")
+                return fastapi.responses.JSONResponse(status_code=404, content={
+                    "message": "This endpoint does not exist."})
         else:
-            return fastapi.responses.Response(status_code=401, content="the provided token is invalid.")
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
     else:
-        return fastapi.responses.Response(status_code=401, content="You must provide a token.")
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
 
 
 @api.get("/bridges/{endpoint}", description="Get an endpoint.")
@@ -73,11 +74,11 @@ def get_endpoint(endpoint: int,
 
                 return
             except FileNotFoundError:
-                return fastapi.responses.Response(status_code=404, content="This endpoint does not exist.")
+                return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
         else:
-            return fastapi.responses.Response(status_code=401, content="the provided token is invalid.")
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
     else:
-        return fastapi.responses.Response(status_code=401, content="You must provide a token.")
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
 
 
 @api.post("/token/{endpoint}", description="Generate a new token. (Only works with Guildcord-Bot)")
@@ -96,8 +97,7 @@ def new_token(endpoint: int,
             return {f"token": token}
 
     else:
-        return fastapi.responses.Response(status_code=403, content="The provided token is invalid.")
-
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "The provided token is invalid."})
 
 @api.post("/update/{endpoint}", description="Modify an endpoint.",
           response_description="Endpoint with updated data.")
@@ -105,22 +105,22 @@ async def post_endpoint(endpoint: int,
                         webhook_discord: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
                         webhook_guilded: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
                         webhook_revolt: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
-                        log_discord: Annotated[int, fastapi.Query(max_length=25, min_length=10)] = None,
-                        log_guilded: Annotated[str, fastapi.Query(max_length=8, min_length=50)] = None,
-                        log_revolt: Annotated[str, fastapi.Query(max_length=8, min_length=50)] = None,
-                        channel_discord: Annotated[int, fastapi.Query(max_length=25, min_length=10)] = None,
-                        channel_guilded: Annotated[str, fastapi.Query(max_length=150, min_length=10)] = None,
-                        channel_revolt: Annotated[str, fastapi.Query(max_length=50, min_length=8)] = None,
+                        log_discord: int = None,
+                        log_guilded: Annotated[str, fastapi.Query(max_length=5, min_length=50)] = None,
+                        log_revolt: Annotated[str, fastapi.Query(max_length=5, min_length=50)] = None,
+                        channel_discord: int = None,
+                        channel_guilded: Annotated[str, fastapi.Query(max_length=150, min_length=5)] = None,
+                        channel_revolt: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
                         blacklist: Annotated[str, fastapi.Query(max_length=250, min_length=1)] = None,
                         sender_channel: Annotated[str, fastapi.Query(max_length=80, min_length=10)] = None,
                         trigger: bool = None,
                         sender: Annotated[str, fastapi.Query(max_length=10, min_length=5)] = None,
                         message_author_name: Annotated[str, fastapi.Query(max_length=50, min_length=1)] = None,
                         message_author_avatar: Annotated[str, fastapi.Query(max_length=250, min_length=50)] = None,
-                        allowed_ids: Annotated[str, fastapi.Query(max_length=50, min_length=10)] = None,
-                        message_author_id: Annotated[str, fastapi.Query(max_length=50, min_length=10)] = None,
+                        allowed_ids: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
+                        message_author_id: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
                         message_content: Annotated[str, fastapi.Query(max_length=1500)] = None,
-                        message_attachments: Annotated[str, fastapi.Query(max_length=1550, min_length=50)] = None,
+                        message_attachments: Annotated[str, fastapi.Query(max_length=1550, min_length=20)] = None,
                         selfuse: bool = None,
                         token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -154,7 +154,7 @@ async def post_endpoint(endpoint: int,
                         for val in blacklist.split(","):
                             for in_value in json_file["config"]["blacklist"]:
                                 if val.lower() == in_value.lower():
-                                    return fastapi.responses.Response(status_code=200)
+                                    return fastapi.responses.JSONResponse(status_code=200)
                             else:
                                 json_file["config"]["blacklist"].append(val.lower())
                     else:
@@ -171,7 +171,7 @@ async def post_endpoint(endpoint: int,
                     elif sender == "revolt":
                         json_file["meta"]["sender"] = "revolt"
                     else:
-                        return fastapi.responses.Response(status_code=400)
+                        return fastapi.responses.JSONResponse(status_code=400)
                 if message_author_name:
                     json_file["meta"]["message"]["author"]["name"] = message_author_name
                 if message_author_avatar:
@@ -180,7 +180,7 @@ async def post_endpoint(endpoint: int,
                     if "," in allowed_ids:
                         for val in allowed_ids.split(","):
                             if val in json_file["config"]["allowed_ids"]:
-                                return fastapi.responses.Response(status_code=200)
+                                return fastapi.responses.JSONResponse(status_code=200)
                             else:
                                 json_file["config"]["allowed_ids"].append(val)
                     else:
@@ -194,7 +194,7 @@ async def post_endpoint(endpoint: int,
                         for val in message_attachments.split(","):
                             for in_value in json_file["meta"]["message"]["attachments"]:
                                 if val.lower() == in_value.lower():
-                                    return fastapi.responses.Response(status_code=200)
+                                    return fastapi.responses.JSONResponse(status_code=200)
                             else:
                                 json_file["meta"]["message"]["attachments"].append(val)
                     else:
@@ -212,24 +212,26 @@ async def post_endpoint(endpoint: int,
                         session = aiohttp.ClientSession()
                         updated_json["meta"]["read"]["discord"] = True
                         global webhook_url_g
-                        for channel in updated_json["config"]["channels"]["discord"]:
-                            if str(channel) == updated_json["meta"]["sender-channel"]:
-                                webhook_url_g = updated_json["config"]["webhooks"]["guilded"][
-                                    updated_json["config"]["channels"]["discord"].index(int(channel))]
-                                if message_content:
-                                    await guilded.Webhook.from_url(webhook_url_g, session=session).send(
-                                        content=updated_json["meta"]["message"]["content"],
-                                        avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                                        username=updated_json["meta"]["message"]["author"]["name"]
-                                    )
-                                if updated_json["meta"]["message"]["attachments"]:
-                                    for attachment in updated_json["meta"]["message"]["attachments"]:
+                        if not updated_json["config"]["channels"]["guilded"]:
+                            updated_json["meta"]["read"]["guilded"] = True
+                        else:
+                            for channel in updated_json["config"]["channels"]["discord"]:
+                                if str(channel) == updated_json["meta"]["sender-channel"]:
+                                    webhook_url_g = updated_json["config"]["webhooks"]["guilded"][
+                                        updated_json["config"]["channels"]["discord"].index(int(channel))]
+                                    if message_content:
                                         await guilded.Webhook.from_url(webhook_url_g, session=session).send(
-                                            content=attachment,
+                                            content=updated_json["meta"]["message"]["content"],
                                             avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
                                             username=updated_json["meta"]["message"]["author"]["name"]
                                         )
-
+                                    if updated_json["meta"]["message"]["attachments"]:
+                                        for attachment in updated_json["meta"]["message"]["attachments"]:
+                                            await guilded.Webhook.from_url(webhook_url_g, session=session).send(
+                                                content=attachment,
+                                                avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                                                username=updated_json["meta"]["message"]["author"]["name"]
+                                            )
                         await session.close()
                         updated_json["meta"]["read"]["guilded"] = True
                         if not updated_json["config"]["channels"]["revolt"]:
@@ -244,23 +246,26 @@ async def post_endpoint(endpoint: int,
                         session = aiohttp.ClientSession()
                         updated_json["meta"]["read"]["guilded"] = True
                         global webhook_url_d
-                        for channel in updated_json["config"]["channels"]["guilded"]:
-                            if str(channel) == updated_json["meta"]["sender-channel"]:
-                                webhook_url_d = updated_json["config"]["webhooks"]["discord"][
-                                    updated_json["config"]["channels"]["guilded"].index(str(channel))]
-                                if message_content:
-                                    await nextcord.Webhook.from_url(webhook_url_d, session=session).send(
-                                        content=updated_json["meta"]["message"]["content"],
-                                        avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
-                                        username=updated_json["meta"]["message"]["author"]["name"]
-                                    )
-                                if updated_json["meta"]["message"]["attachments"]:
-                                    for attachment in updated_json["meta"]["message"]["attachments"]:
+                        if not updated_json["config"]["channels"]["discord"]:
+                            updated_json["meta"]["read"]["discord"] = True
+                        else:
+                            for channel in updated_json["config"]["channels"]["guilded"]:
+                                if str(channel) == updated_json["meta"]["sender-channel"]:
+                                    webhook_url_d = updated_json["config"]["webhooks"]["discord"][
+                                        updated_json["config"]["channels"]["guilded"].index(str(channel))]
+                                    if message_content:
                                         await nextcord.Webhook.from_url(webhook_url_d, session=session).send(
-                                            content=f"![]({attachment})",
+                                            content=updated_json["meta"]["message"]["content"],
                                             avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
                                             username=updated_json["meta"]["message"]["author"]["name"]
                                         )
+                                    if updated_json["meta"]["message"]["attachments"]:
+                                        for attachment in updated_json["meta"]["message"]["attachments"]:
+                                            await nextcord.Webhook.from_url(webhook_url_d, session=session).send(
+                                                content=f"![]({attachment})",
+                                                avatar_url=updated_json["meta"]["message"]["author"]["avatar"],
+                                                username=updated_json["meta"]["message"]["author"]["name"]
+                                            )
                         await session.close()
                         updated_json["meta"]["read"]["discord"] = True
                         if not updated_json["config"]["channels"]["revolt"]:
@@ -275,7 +280,9 @@ async def post_endpoint(endpoint: int,
                         session = aiohttp.ClientSession()
                         updated_json["meta"]["read"]["revolt"] = True
                         global discord_webhook_url
-                        if str(updated_json["meta"]["sender-channel"]) in updated_json["config"]["channels"]["revolt"]:
+                        if not updated_json["config"]["channels"]["discord"]:
+                            updated_json["meta"]["read"]["discord"] = True
+                        elif str(updated_json["meta"]["sender-channel"]) in updated_json["config"]["channels"]["revolt"]:
                             discord_webhook_url = updated_json["config"]["webhooks"]["discord"][
                                 updated_json["config"]["channels"]["revolt"].index(
                                     str(updated_json["meta"]["sender-channel"]))]
@@ -295,7 +302,9 @@ async def post_endpoint(endpoint: int,
                                     )
                             updated_json["meta"]["read"]["discord"] = True
                         global guilded_webhook_url
-                        if str(updated_json["meta"]["sender-channel"]) in str(
+                        if not updated_json["config"]["channels"]["guilded"]:
+                            updated_json["meta"]["read"]["guilded"] = True
+                        elif str(updated_json["meta"]["sender-channel"]) in str(
                                 updated_json["config"]["channels"]["revolt"]):
                             guilded_webhook_url = updated_json["config"]["webhooks"]["guilded"][
                                 updated_json["config"]["channels"]["revolt"].index(
@@ -349,11 +358,11 @@ async def post_endpoint(endpoint: int,
                         check_file.close()
                         await asyncio.sleep(1)
                 else:
-                    return fastapi.responses.Response(status_code=200, content="This endpoint activated self-usage.")
+                    return fastapi.responses.JSONResponse(status_code=200, content={"message": "This endpoint activated self-usage."})
         else:
-            return fastapi.responses.Response(status_code=401, content="The provided token is invalid.")
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
     else:
-        return fastapi.responses.Response(status_code=401, content="You must provide a token.")
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
 
 
 @api.post("/read/{endpoint}",
@@ -381,7 +390,7 @@ def mark_read(endpoint: int,
         except:
             traceback.print_exc()
     else:
-        return fastapi.responses.Response(status_code=401, content="The provided token is invalid.")
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
 
 
 @api.post("/create", description="Create an endpoint.",
@@ -431,9 +440,9 @@ def create_endpoint(endpoint: int):
             }
         }
         json.dump(data, file)
-        return fastapi.responses.Response(status_code=201, content="Created.")
+        return fastapi.responses.JSONResponse(status_code=201, content={"message": "Created."})
     except FileExistsError:
-        return fastapi.responses.Response(status_code=403, content="This endpoint exists already.")
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint exists already."})
 
 
 @api.delete("/delete/{endpoint}", description="Delete an endpoint.")
@@ -445,11 +454,12 @@ def delete_endpoint(endpoint: int,
             try:
                 os.remove(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json")
             except FileNotFoundError:
-                return fastapi.responses.Response(status_code=404, content="This endpoint does not exist.")
+                return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
         else:
-            return fastapi.responses.Response(status_code=401, content="The provided token is invalid.")
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
     else:
-        return fastapi.responses.Response(status_code=401, content="You must provide a token.")
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
+
 
 
 uvicorn.run(api, host="localhost", port=991)
