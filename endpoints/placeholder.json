@@ -4,24 +4,32 @@
   "config": {
     "self-user": false,
     "webhooks": {
-      "discord": "",
-      "guilded": ""
+      "discord": [],
+      "guilded": [],
+      "revolt": []
     },
     "channels": {
-      "discord": ,
-      "guilded": ""
+      "discord": [],
+      "guilded": [],
+      "revolt": []
     },
     "logs": {
       "discord": null,
-      "guilded": null
+      "guilded": null,
+      "revolt": null
     },
-    "blacklist": [
-      null
-    ]
+    "blacklist": [],
+    "allowed-ids": []
   },
   "meta": {
+    "sender-channel": null,
     "trigger": false,
     "sender": null,
+    "read": {
+      "discord": false,
+      "guilded": false,
+      "revolt": false
+    },
     "message": {
       "author": {
         "name": null,
@@ -29,9 +37,7 @@
         "id": null
       },
       "content": null,
-      "attachments": [
-        null
-      ]
+      "attachments": []
     }
   }
 }
