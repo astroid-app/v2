@@ -184,7 +184,7 @@ async def post_endpoint(endpoint: int,
                             else:
                                 json_file["config"]["allowed_ids"].append(val)
                     else:
-                        json_file["config"]["allowed_ids"].append(allowed_ids)
+                        json-file["config"]["allowed_ids"].append(allowed_ids)
                 if message_author_id:
                     json_file["meta"]["message"]["author"]["id"] = message_author_id
                 if message_content:
