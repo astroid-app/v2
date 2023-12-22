@@ -179,12 +179,12 @@ async def post_endpoint(endpoint: int,
                 if allowed_ids:
                     if "," in allowed_ids:
                         for val in allowed_ids.split(","):
-                            if val in json_file["config"]["allowed_ids"]:
+                            if val in json_file["config"]["allowed-ids"]:
                                 return fastapi.responses.JSONResponse(status_code=200)
                             else:
-                                json_file["config"]["allowed_ids"].append(val)
+                                json_file["config"]["allowed-ids"].append(val)
                     else:
-                        json_file["config"]["allowed_ids"].append(allowed_ids)
+                        json_file["config"]["allowed-ids"].append(allowed_ids)
                 if message_author_id:
                     json_file["meta"]["message"]["author"]["id"] = message_author_id
                 if message_content:
