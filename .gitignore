@@ -7,4 +7,5 @@ Bot/config.py
 .github
 LICENSE
 tokens.json
+endpoints
 __pycache__
