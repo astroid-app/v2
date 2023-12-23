@@ -1,3 +1,10 @@
 .idea
 .git
+Bot/guilded_servers
+Bot/revolt.log
+Bot/revolt_servers
+Bot/config.py
+.github
+LICENSE
+tokens.json
 __pycache__
