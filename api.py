@@ -23,12 +23,12 @@ api = fastapi.FastAPI(
 @api.get("/", description="Does nothing. Just sitting there and waiting for requests. (Redirects on 'GET' to the "
                           "documentation.)")
 def root():
-    return fastapi.responses.RedirectResponse(status_code=301, url="https://guildcord-api.tk/docs")
+    return fastapi.responses.RedirectResponse(status_code=301, url="https://guildcord.deutscher775.de/docs")
 
 
 @api.get("/{endpoint}", description="Get an endpoint.")
 def get_endpoint(endpoint: int,
-                 token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+                 token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None, download: bool = False):
     global data_token
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -38,7 +38,10 @@ def get_endpoint(endpoint: int,
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
-                return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r"))
+                if download is True:
+                    return fastapi.responses.FileResponse(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", media_type='application/octet-stream', filename=f"gc-api-{endpoint}-{token}.json")
+                else:
+                    return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r"))
             except FileNotFoundError:
                 return fastapi.responses.JSONResponse(status_code=404, content={
                     "message": "This endpoint does not exist."})
@@ -49,7 +52,7 @@ def get_endpoint(endpoint: int,
 
 
 @api.get("/bridges/{endpoint}", description="Get an endpoint.")
-def get_endpoint(endpoint: int,
+def get_bridges(endpoint: int,
                  token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     global data_token
     try:
@@ -72,7 +75,7 @@ def get_endpoint(endpoint: int,
                 for bridge in bridges_json["config"]["channels"]["guilded"]:
                     bridges_guilded.append(bridge)
 
-                return
+                return fastapi.responses.JSONResponse({"discord":bridges_discord, "guilded": bridges_guilded, "revolt": bridges_revolt}, status_code=200)
             except FileNotFoundError:
                 return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
         else:
@@ -129,6 +132,7 @@ async def post_endpoint(endpoint: int,
             if f"{endpoint}.json" in os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/endpoints"):
                 file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
                 json_file = json.load(file)
+                json_file["meta"]["read"]["revolt"] = True
                 if webhook_discord:
                     json_file["config"]["webhooks"]["discord"].append(webhook_discord)
                 if webhook_guilded:
@@ -179,12 +183,12 @@ async def post_endpoint(endpoint: int,
                 if allowed_ids:
                     if "," in allowed_ids:
                         for val in allowed_ids.split(","):
-                            if val in json_file["config"]["allowed_ids"]:
+                            if val in json_file["config"]["allowed-ids"]:
                                 return fastapi.responses.JSONResponse(status_code=200)
                             else:
-                                json_file["config"]["allowed_ids"].append(val)
+                                json_file["config"]["allowed-ids"].append(val)
                     else:
-                        json_file["config"]["allowed_ids"].append(allowed_ids)
+                        json_file["config"]["allowed-ids"].append(allowed_ids)
                 if message_author_id:
                     json_file["meta"]["message"]["author"]["id"] = message_author_id
                 if message_content:
@@ -448,6 +452,57 @@ def create_endpoint(endpoint: int):
 @api.delete("/delete/{endpoint}", description="Delete an endpoint.")
 def delete_endpoint(endpoint: int,
                     token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+    if token is not None:
+        if token == data_token or token == Bot.config.MASTER_TOKEN:
+            try:
+                os.remove(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json")
+            except FileNotFoundError:
+                return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
+        else:
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
+
+
+@api.delete("/delete/endpoint/{endpoint}", description="Delete an endpoint.")
+def delete_endpoint(endpoint: int,
+                    token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+    if token is not None:
+        if token == data_token or token == Bot.config.MASTER_TOKEN:
+            try:
+                os.remove(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json")
+            except FileNotFoundError:
+                return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
+        else:
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
+
+@api.post("/edit/data/{endpiont}", description="Edit or delete specific data of endpoint")
+def delete_enpoint_data(endpoint: int,
+                        webhook_discord: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
+                        webhook_guilded: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
+                        webhook_revolt: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
+                        log_discord: int = None,
+                        log_guilded: Annotated[str, fastapi.Query(max_length=5, min_length=50)] = None,
+                        log_revolt: Annotated[str, fastapi.Query(max_length=5, min_length=50)] = None,
+                        channel_discord: int = None,
+                        channel_guilded: Annotated[str, fastapi.Query(max_length=150, min_length=5)] = None,
+                        channel_revolt: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
+                        blacklist: Annotated[str, fastapi.Query(max_length=250, min_length=1)] = None,
+                        sender_channel: Annotated[str, fastapi.Query(max_length=80, min_length=10)] = None,
+                        trigger: bool = None,
+                        sender: Annotated[str, fastapi.Query(max_length=10, min_length=5)] = None,
+                        message_author_name: Annotated[str, fastapi.Query(max_length=50, min_length=1)] = None,
+                        message_author_avatar: Annotated[str, fastapi.Query(max_length=250, min_length=50)] = None,
+                        allowed_ids: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
+                        message_author_id: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
+                        message_content: Annotated[str, fastapi.Query(max_length=1500)] = None,
+                        message_attachments: Annotated[str, fastapi.Query(max_length=1550, min_length=20)] = None,
+                        selfuse: bool = None,
+                        token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
