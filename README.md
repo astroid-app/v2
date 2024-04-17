@@ -1,6 +1,6 @@
-# Guildcord V2
+# Astroid
 ## Improved performance and a RestAPI
-Guildcord is the link between discord, revolt and guilded.
+Astroid - The Bridge you've always wanted.
 
 ### Before setting up
 This code are _**our**_ API and bots that runs on our own servers. If you have problems setting it up or have problems while its running, it is probably a not changed value in the code.
