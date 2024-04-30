@@ -4,7 +4,7 @@ Astroid - The Bridge you've always wanted.
 
 ### Before setting up
 This code are _**our**_ API and bots that runs on our own servers. If you have problems setting it up or have problems while its running, it is probably a not changed value in the code.
-#### **__There are placeholders e.g. in endpoints or in Bot/guilded_servers which need to be deleted before running the code.__**
+#### **__There are placeholders e.g. in endpoints or in src/Bot/guilded_servers which need to be deleted before running the code.__**
 
 ### Setting up
 
