@@ -12,7 +12,7 @@ This code are _**our**_ API and bots that runs on our own servers. If you have p
 
 2. The bot codes need to be changed before you want to use them, **if you set up your own API**. If not, these can be ignored.
 
-3. Change the `Bot/config.py` and enter your bot tokens. **If you are running the API on your own, enter a master token to generate new tokens and to give the bots access to the endpoints globally**.
+3. Change the `src/Bot/config.py` and enter your bot tokens. **If you are running the API on your own, enter a master token to generate new tokens and to give the bots access to the endpoints globally**.
 
 4. Run your wanted python files.
 
