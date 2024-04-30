@@ -234,6 +234,13 @@ async def send_embed(ctx):
 
 @client.event
 async def on_message(message: guilded.Message):
+    async with aiohttp.ClientSession() as session:
+        endpoint = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{message.guild.id}.json", "r"))["discord"]
+        async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as isbeta:
+            isbeta = await isbeta.json()
+            if isbeta.get("config").get("isbeta"):
+                return
+            
     await client.process_commands(message)
     try:
         endpoint_file = open(

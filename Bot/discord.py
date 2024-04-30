@@ -22,6 +22,7 @@ session = aiohttp.ClientSession()
 
 @client.event
 async def on_ready():
+    await client.sync_all_application_commands()
     print(f"Logged in as {client.user} ({client.user.id})")
 
 # Slash command to send an embed
@@ -68,9 +69,14 @@ async def on_message_edit(before: nextcord.Message, after: nextcord.Message):
             log_json = await log_request.json()
         await client.get_channel(log_json["config"]["logs"]["discord"]).send(embed=embed)
 
+
 # Event handler for new messages
 @client.event
 async def on_message(message: nextcord.Message):
+    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as isbeta:
+        isbeta = await isbeta.json()
+        if isbeta.get("config").get("isbeta"):
+            return
     try:
         # Get channel information from the API
         async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as discord_channel_request:
@@ -140,6 +146,18 @@ async def on_message(message: nextcord.Message):
     except:
         traceback.print_exc()
         pass
+
+
+# Slash command to activate beta mode
+@client.slash_command(name="activate_beta", description="Activate beta mode")
+async def activate_beta(interaction: nextcord.Interaction):
+    await interaction.response.send_message("Activating beta mode..", ephemeral=True)
+    # Update the beta status in the API
+    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.guild.id}?token={config.MASTER_TOKEN}&beta=true") as r:
+        if r.ok:
+            await interaction.edit_original_message(content="Activated beta mode.")
+        else:
+            await interaction.edit_original_message(content=r.json().get("message"))
 
 # Slash command to register the server
 @client.slash_command(name="register", default_member_permissions=8, description="Automatically register your server.")
