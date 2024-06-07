@@ -7,6 +7,18 @@ import aiohttp
 import pathlib
 import datetime
 import traceback
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn=config.SENTRY_DSN,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+) 
 
 client = commands.Bot(command_prefix="gc!")
 
@@ -29,7 +41,7 @@ async def post_json(url, data):
 @client.event
 async def on_message_delete(message: guilded.Message):
     endpoint_file = open(
-        f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{message.server.id}.json",
+        f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.server.id}.json",
         "r",
     )
     endpoint = json.load(endpoint_file)["discord"]
@@ -62,7 +74,7 @@ async def on_message_delete(message: guilded.Message):
 @client.event
 async def on_message_edit(before: guilded.Message, after: guilded.Message):
     endpoint_file = open(
-        f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{before.server.id}.json",
+        f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{before.server.id}.json",
         "r",
     )
     endpoint = json.load(endpoint_file)["discord"]
@@ -97,7 +109,7 @@ async def register(ctx, endpoint):
         await ctx.send("Invalid Format: `gc!register DISCORD_SERVER_ID`")
     else:
         for server in os.listdir(
-            f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers"
+            f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers"
         ):
             if server.endswith(".json"):
                 try:
@@ -117,7 +129,7 @@ async def register(ctx, endpoint):
             json.dump(
                 data,
                 open(
-                    f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{ctx.guild.id}.json",
+                    f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{ctx.guild.id}.json",
                     "x",
                 ),
             )
@@ -235,16 +247,15 @@ async def send_embed(ctx):
 @client.event
 async def on_message(message: guilded.Message):
     async with aiohttp.ClientSession() as session:
-        endpoint = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{message.guild.id}.json", "r"))["discord"]
+        endpoint = json.load(open(f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.guild.id}.json", "r"))["discord"]
         async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as isbeta:
             isbeta = await isbeta.json()
             if isbeta.get("config").get("isbeta"):
                 return
-            
     await client.process_commands(message)
     try:
         endpoint_file = open(
-            f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{message.server.id}.json",
+            f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.server.id}.json",
             "r",
         )
         endpoint = json.load(endpoint_file)["discord"]
@@ -274,17 +285,8 @@ async def on_message(message: guilded.Message):
                             async with session.post(
                                 f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}"
                             ) as response:
-                                pass
-                            if message.embeds:
-                                embed = {
-                                    "title": f"{message.embeds[0].title if message.embeds[0].title else None}",
-                                    "description": f"{message.embeds[0].description if message.embeds[0].description else None}",
-                                    "thumbnail": f"{message.embeds[0].thumbnail.url.replace('&', '!PARAM') if message.embeds[0].thumbnail.url else None}",
-                                    "image": f"{message.embeds[0].image.url.replace('&', '!PARAM') if message.embeds[0].image else None}",
-                                    "footer": f"{message.embeds[0].footer.text if message.embeds[0].footer.text else None}",
-                                    "fields": [],
-                                }
-                        if message.embeds[0].fields:
+                                print(response.status, response.text)
+                        elif message.embeds:
                             for field in message.embeds[0].fields:
                                 embed["fields"].append(
                                     {
@@ -293,16 +295,12 @@ async def on_message(message: guilded.Message):
                                         "inline": str(field.inline).lower(),
                                     }
                                 )
-                        async with session.post(
-                            f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_embed={embed}"
-                        ) as response:
-                            pass
-                        if message.attachments:
+                        elif message.attachments:
                             if len(message.attachments) == 1:
                                 async with session.post(
                                     f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}"
                                 ) as response:
-                                    pass
+                                    print(response.status, response.text)
                         else:
                             attachments = ""
                             for attachment in message.attachments:

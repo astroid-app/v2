@@ -1,14 +1,18 @@
 .idea
 .git
-Bot/guilded_servers
-Bot/revolt.log
-Bot/revolt_servers
-Bot/config.py
+src/Bot/guilded_servers
+src/Bot/revolt.log
+src/Bot/revolt_servers
+src/Bot/config.py
 .github
 LICENSE
 tokens.json
 src/endpoints
 beta
 Copy of endpoints
-beta_users.py
+src/beta_users.py
+TMP
 __pycache__
+endpoints*
+tokens*
+src/tokens.json

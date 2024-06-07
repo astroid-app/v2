@@ -20,7 +20,7 @@
     },
     "blacklist": [],
     "allowed-ids": [],
-    "isbeta": false,
+    "isbeta": false
   },
   "meta": {
     "sender-channel": null,

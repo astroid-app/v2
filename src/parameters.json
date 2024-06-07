@@ -1,0 +1,662 @@
+{
+  "invite": [
+    {
+      "name": "platform",
+      "description": "Platform to invite the bot to.",
+      "urlType": "path",
+      "type": "string",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "token",
+      "description": "Token to use for the invite.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": "",
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    }
+  ],
+  "getServerStructure": [
+    {
+      "name": "id",
+      "description": "ID of the server.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    }
+  ],
+  "getEndpoint": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "download",
+      "description": "Download the data of your endpoint.",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": false,
+      "required": false
+    }
+  ],
+  "getBridges": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    }
+  ],
+  "newToken": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "master_token",
+      "description": "Master token of the API. (Only for admins and Astroid Bots)",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 85,
+      "maxLength": 85,
+      "default": "",
+      "required": true
+    }
+  ],
+  "postEndpoint": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "index",
+      "description": "Index of the specific data to write.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "webhook_discord",
+      "description": "Webhook URL for Discord.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 350,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "webhook_guilded",
+      "description": "Webhook URL for Guilded.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 350,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "webhook_revolt",
+      "description": "Webhook URL for Revolt.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 350,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "log_discord",
+      "description": "Log channel ID for Discord.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "log_guilded",
+      "description": "Log channel ID for Guilded.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "log_revolt",
+      "description": "Log channel ID for Revolt.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "channel_discord",
+      "description": "Channel ID for Discord.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "channel_guilded",
+      "description": "Channel ID for Guilded.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 150,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "channel_revolt",
+      "description": "Channel ID for Revolt.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "blacklist",
+      "description": "List of words blacklisted to bridge.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "sender_channel",
+      "description": "ID of the channel the message got sent from.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 80,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "trigger",
+      "description": "Indicator if a message is available.",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "sender",
+      "description": "Platform where the message got sent from.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 10,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_author_name",
+      "description": "Name of the author of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_author_avatar",
+      "description": "Avatar URL of the author of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 250,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "allowed_ids",
+      "description": "List of Bot-IDs allowed to bridge.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_author_id",
+      "description": "ID of the author of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_content",
+      "description": "Content of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": "",
+      "maxLength": 1500,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_attachments",
+      "description": "Attachments of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 1550,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_embed",
+      "description": "Embed of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": "",
+      "maxLength": 1500,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "selfuse",
+      "description": "Indicator if the endpoint is a self-user.",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "beta",
+      "description": "Indicator if the endpoint is a beta tester.",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": false,
+      "required": false
+    }
+  ],
+  "markRead": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "read_discord",
+      "description": "Indicator if the messages from Discord are read from the Bot. (Mostly used if you have an own Bot for Discord)",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "read_guilded",
+      "description": "Indicator if the messages from Guilded are read from the Bot. (Mostly used if you have an own Bot for Guilded)",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "read_revolt",
+      "description": "Indicator if the messages from Revolt are read from the Bot. (Mostly used if you have an own Bot for Revolt)",
+      "urlType": "query",
+      "type": "boolean",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    }
+  ],
+  "createEndpoint": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    }
+  ],
+  "deleteEndpoint": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    }
+  ],
+  "deleteEndpointData": [
+    {
+      "name": "endpoint",
+      "description": "ID of the endpoint.",
+      "urlType": "path",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": true
+    },
+    {
+      "name": "webhook_discord",
+      "description": "Webhook URL for Discord.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 350,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "webhook_guilded",
+      "description": "Webhook URL for Guilded.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 350,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "webhook_revolt",
+      "description": "Webhook URL for Revolt.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 350,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "log_discord",
+      "description": "Log channel ID for Discord.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "log_guilded",
+      "description": "Log channel ID for Guilded.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "log_revolt",
+      "description": "Log channel ID for Revolt.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "channel_discord",
+      "description": "Channel ID for Discord.",
+      "urlType": "query",
+      "type": "integer",
+      "minLength": "",
+      "maxLength": "",
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "channel_guilded",
+      "description": "Channel ID for Guilded.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 150,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "channel_revolt",
+      "description": "Channel ID for Revolt.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 150,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "blacklist",
+      "description": "List of words blacklisted to bridge.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 250,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "sender_channel",
+      "description": "ID of the channel the message got sent from.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 80,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "sender",
+      "description": "Platform where the message got sent from.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 10,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_author_name",
+      "description": "Name of the author of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_author_avatar",
+      "description": "Avatar URL of the author of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 50,
+      "maxLength": 250,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "allowed_ids",
+      "description": "List of Bot-IDs allowed to bridge.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_author_id",
+      "description": "ID of the author of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 50,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_content",
+      "description": "Content of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": "",
+      "maxLength": 1500,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "message_attachments",
+      "description": "Attachments of the message.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 1550,
+      "default": "",
+      "required": false
+    },
+    {
+      "name": "token",
+      "description": "Token of the endpoint.",
+      "urlType": "query",
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 85,
+      "default": "",
+      "required": false
+    }
+  ]
+}
