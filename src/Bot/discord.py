@@ -5,6 +5,18 @@ from nextcord.ext import commands
 import config
 import aiohttp
 import traceback
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn=config.SENTRY_DSN,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+) 
 
 # Set up logging
 logger = logging.getLogger('nextcord')
@@ -81,7 +93,7 @@ async def on_message(message: nextcord.Message):
         # Get channel information from the API
         async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as discord_channel_request:
             discord_channel = await discord_channel_request.json()
-        if message.channel.id in discord_channel.get("config").get("channels").get("discord"):
+        if str(message.channel.id) in discord_channel.get("config").get("channels").get("discord"):
             global blacklist
             # Get blacklist information from the API
             async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as blacklist_request:
@@ -104,7 +116,7 @@ async def on_message(message: nextcord.Message):
                     allowed_ids = await allowed_ids_request.json()
             except:
                 pass
-            if not message.author.bot or message.author.id in allowed_ids.get("config").get("allowed_ids"):
+            if not message.author.bot or str(message.author.id) in allowed_ids.get("config").get("allowed-ids"):
                 print(message.author.name)
                 print(message.embeds)
                 if not message.attachments and not message.embeds:
@@ -177,7 +189,7 @@ async def register(interaction: nextcord.Interaction):
             token_data = await token_request.json()
         token = token_data["token"]
         # Update values in the API
-        async with session.post(f"https://astroid.deutscher775.de/update/{interaction.channel.guild.id}?channel_discord={interaction.channel.id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r2:
+        async with session.post(f"https://astroid.deutscher775.de/update/{interaction.channel.guild.id}?channel_discord={interaction.channel_id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r2:
             if r2.ok:    
                 await interaction.edit_original_message(content="Updated values. Requesting token.. (This may take a while.)")
             else:    
@@ -196,7 +208,7 @@ async def add_bridge(interaction: nextcord.Interaction):
     # Create a webhook for astroid
     webhook = await interaction.channel.create_webhook(name="astroid")
     # Update values in the API
-    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.channel.guild.id}?channel_discord={interaction.channel.id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r:
+    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.channel.guild.id}?channel_discord={interaction.channel_id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r:
         if r.ok:
             await interaction.edit_original_message(content=f"Added new channel. Execute `gc!add-bridge {interaction.guild.id}` on the other side/s.")
         else:
@@ -292,11 +304,11 @@ async def gen(interaction: nextcord.Interaction):
 async def remove_bridge(interaction: nextcord.Interaction):
     await interaction.response.send_message("Removing bridge..", ephemeral=True)
     # Update the channel in the API
-    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.guild.id}?channel_discord={interaction.channel.id}&token={config.MASTER_TOKEN}") as r:
+    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.guild.id}?channel_discord={interaction.channel_id}&token={config.MASTER_TOKEN}") as r:
         if r.ok:    
             await interaction.edit_original_message(content="Removed bridge.")
         else:    
             await interaction.edit_original_message(content=r.json().get("message"))
 
 # Run the bot
-client.run(config.DISCORD_TOKEN)
+client.run(config.DISCORD_TOKEN, reconnect=True)

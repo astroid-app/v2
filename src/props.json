@@ -1,0 +1,85 @@
+{
+  "root": {
+    "name": "Root",
+    "method": "GET",
+    "description": "Does nothing. Just sitting there and waiting for requests. (Redirects on 'GET' to the documentation.)"
+  },
+  "invite": {
+    "route": "/invite/{platfrom}",
+    "name": "Invite",
+    "method": "GET",
+    "description": "Get the invite link for the astroid bot."
+  },
+  "privacyDc": {
+    "route": "/discord",
+    "name": "Privacy",
+    "method": "GET",
+    "description": "Invite to the Discord Server"
+  },
+  "privacy": {
+    "route": "/privacy",
+    "name": "Privacy",
+    "method": "GET",
+    "description": "Privacy"
+  },
+  "terms": {
+    "route": "/terms",
+    "name": "Terms",
+    "method": "GET",
+    "description": "Terms of service"
+  },
+  "getServerStructure": {
+    "route": "/getserverstructure",
+    "name": "Get Server Structure",
+    "method": "GET",
+    "description": "Get a server structure."
+  },
+  "getEndpoint": {
+    "route": "/{endpoint}",
+    "name": "Get Endpoint",
+    "method": "GET",
+    "description": "Get an endpoint."
+  },
+  "getBridges": {
+    "route": "/bridges/{endpoint}",
+    "name": "Get Bridges",
+    "method": "GET",
+    "description": "Get an endpoint."
+  },
+  "newToken": {
+    "route": "/token/{endpoint}",
+    "name": "New Token",
+    "method": "POST",
+    "description": "Generate a new token. (Only works with astroid-Bot)"
+  },
+  "postEndpoint": {
+    "route": "/update/{endpoint}",
+    "name": "Post Endpoint",
+    "method": "POST",
+    "description": "Modify an endpoint."
+  },
+  "markRead": {
+    "route": "/read/{endpoint}",
+    "name": "Mark Read",
+    "method": "POST",
+    "description": "Mark the 'meta' as read on the platform(s). [Note: Currently only used in the astroid Revolt-bot.]"
+  },
+  "createEndpoint": {
+    "route": "/create",
+    "name": "Create Endpoint",
+    "method": "POST",
+    "description": "Create an endpoint."
+  },
+  "deleteEndpoint": {
+    "route": "/delete/{endpoint}",
+    "name": "Delete Endpoint",
+    "method": "DELETE",
+    "description": "Delete an endpoint."
+  },
+  "deleteEndpointData": {
+    "route": "/delete/data/{endpoint}",
+    "name": "Delete Endpoint Data",
+    "method": "DELETE",
+    "description": "Edit or delete specific data of endpoint"
+  }
+}

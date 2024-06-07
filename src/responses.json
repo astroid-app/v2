@@ -1,0 +1,150 @@
+{
+  "root": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    }
+  ],
+  "invite": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "privacyDc": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    }
+  ],
+  "privacy": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    }
+  ],
+  "terms": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    }
+  ],
+  "getServerStructure": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "getEndpoint": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "getBridges": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "newToken": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "postEndpoint": [
+    {
+      "code": "200",
+      "desription": "Endpoint with updated data",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "markRead": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "createEndpoint": [
+    {
+      "code": "200",
+      "desription": "Endpoints data",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "deleteEndpoint": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ],
+  "deleteEndpointData": [
+    {
+      "code": "200",
+      "desription": "Succesful Response",
+      "mediaType": "application/json"
+    },
+    {
+      "code": "422",
+      "desription": "Validation Error",
+      "mediaType": "application/json"
+    }
+  ]
+}

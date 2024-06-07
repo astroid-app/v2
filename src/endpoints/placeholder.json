@@ -19,7 +19,8 @@
       "revolt": null
     },
     "blacklist": [],
-    "allowed-ids": []
+    "allowed-ids": [],
+    "isbeta": false
   },
   "meta": {
     "sender-channel": null,

@@ -9,6 +9,18 @@ import pathlib
 import json
 import asyncio
 import aiohttp
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn=config.SENTRY_DSN,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+) 
 
 prefix = "gc!"
 
@@ -16,7 +28,7 @@ prefix = "gc!"
 def get_endpoint(server: revolt.Server):
     print(server.id)
     try:
-        return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/revolt_servers/{server.id}.json", "r"))[
+        return json.load(open(f"{pathlib.Path(__file__).parent.parent.resolve()}/revolt_servers/{server.id}.json", "r"))[
             "discord"]
     except:
         return False
@@ -28,10 +40,10 @@ class Client(commands.CommandsClient):
     async def on_ready(self):
         print(f"Logged in as {self.user}")
         while True:
-            for server in os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/revolt_servers"):
+            for server in os.listdir(f"{pathlib.Path(__file__).parent.parent.resolve()}/revolt_servers"):
                 try:
                     endpoint = int(
-                        json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/revolt_servers/{server}", "r"))[
+                        json.load(open(f"{pathlib.Path(__file__).parent.parent.resolve()}/revolt_servers/{server}", "r"))[
                             "discord"])
                     endpoint_request = requests.get(
                         f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}")
@@ -46,13 +58,13 @@ class Client(commands.CommandsClient):
                         message_attachments = endpoint_json["meta"]["message"]["attachments"]
                         sender_channel = endpoint_json["meta"]["sender-channel"]
                         global channel_id
-                        if str(sender_channel) in str(channel_ids_guilded) or channel_ids_guilded is []:
+                        if str(sender_channel) in channel_ids_guilded or channel_ids_guilded is []:
                             print(endpoint_json["config"]["channels"]["revolt"])
                             channel_id = endpoint_json["config"]["channels"]["revolt"][
                                 channel_ids_guilded.index(str(sender_channel))]
-                        elif str(sender_channel) in str(channel_ids_discord):
+                        elif str(sender_channel) in channel_ids_discord:
                             channel_id = endpoint_json["config"]["channels"]["revolt"][
-                                channel_ids_discord.index(int(sender_channel))]
+                                channel_ids_discord.index(str(sender_channel))]
                         sender = endpoint_json["meta"]["sender"]
                         print(channel_id)
                         channel = await self.fetch_channel(channel_id)
@@ -123,7 +135,7 @@ class Client(commands.CommandsClient):
                                                                              "Note: Works like `register`")
                 await message.reply(embed=embed)
         try:
-            endpoint_file = open(f"{pathlib.Path(__file__).parent.resolve()}/revolt_servers/{message.server.id}.json",
+            endpoint_file = open(f"{pathlib.Path(__file__).parent.parent.resolve()}/revolt_servers/{message.server.id}.json",
                                  "r")
             endpoint = json.load(endpoint_file)["discord"]
             if message.channel.id in requests.get(
@@ -189,7 +201,7 @@ class Client(commands.CommandsClient):
         if endpoint is None:
             await ctx.reply("Missing parameter: `endpoint`.\n Usage: `gc!register` `[endpoint]`")
             return
-        for server in os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers"):
+        for server in os.listdir(f"{pathlib.Path(__file__).parent.parent.resolve()}/revolt_servers"):
             if server.endswith(".json"):
                 try:
                     discord_server = json.load(open(server, "r"))["discord"]
@@ -206,7 +218,7 @@ class Client(commands.CommandsClient):
             data = {"discord": endpoint}
             json.dump(data,
                       open(
-                          f"{pathlib.Path(__file__).parent.resolve()}/revolt_servers/{ctx.message.channel.server.id}.json",
+                          f"{pathlib.Path(__file__).parent.parent.resolve()}/revolt_servers/{ctx.message.channel.server.id}.json",
                           "x"))
         except FileExistsError:
             await ctx.reply(f"Enpoint exists already: https://astroid.deutscher775.de/{endpoint}")
