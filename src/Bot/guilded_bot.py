@@ -108,35 +108,40 @@ async def register(ctx, endpoint):
     if endpoint == "":
         await ctx.send("Invalid Format: `gc!register DISCORD_SERVER_ID`")
     else:
-        for server in os.listdir(
-            f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers"
-        ):
-            if server.endswith(".json"):
+        for server_file in os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers"):
+            if server_file.endswith(".json"):
                 try:
-                    discord_server = json.load(open(server, "r"))["discord"]
-                    if discord_server == endpoint:
-                        await ctx.send(
-                            f"Endpoint already exists: https://astroid.deutscher775.de/{endpoint}"
-                        )
-                        return
-                except:
-                    pass
-            else:
-                pass
+                    guilded_server = f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{server_file}"
+                    if guilded_server == endpoint:
+                        async with aiohttp.ClientSession() as session:
+                            resp = await session.get(
+                                f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}")
+                            resp_json = await resp.json()
+                            if resp_json["config"]["channels"]["guilded"]:
+                                if ctx.message.channel.id in resp_json["config"]["channels"]["guilded"]:
+                                    await ctx.message.reply("This endpoint is already registered.")
+                                    return
+                            else:
+                                async with aiohttp.ClientSession() as session:
+                                    await session.post(
+                                        f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={ctx.message.channel.id}&token={config.MASTER_TOKEN}")
+                            await ctx.message.reply(f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}")                        
+                            return
+                except Exception as e:
+                    await ctx.message.reply(f"An error occurred while trying to update the local enpoint file. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
+                    return
 
         try:
             data = {"discord": endpoint}
             json.dump(
                 data,
                 open(
-                    f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{ctx.guild.id}.json",
+                    f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{ctx.guild.id}.json",
                     "x",
                 ),
             )
-        except FileExistsError:
-            await ctx.send(
-                f"Endpoint already exists: https://astroid.deutscher775.de/{endpoint}"
-            )
+        except FileExistsError as e:
+            await ctx.message.reply(f"An error occurred while trying to update the local enpoint file. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
             return
         webhook = await ctx.channel.create_webhook(name="astroid")
         r = await post_json(
@@ -285,7 +290,7 @@ async def on_message(message: guilded.Message):
                             async with session.post(
                                 f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}"
                             ) as response:
-                                print(response.status, response.text)
+                                pass
                         elif message.embeds:
                             for field in message.embeds[0].fields:
                                 embed["fields"].append(
@@ -300,7 +305,7 @@ async def on_message(message: guilded.Message):
                                 async with session.post(
                                     f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}"
                                 ) as response:
-                                    print(response.status, response.text)
+                                    pass
                         else:
                             attachments = ""
                             for attachment in message.attachments:

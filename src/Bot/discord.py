@@ -117,8 +117,6 @@ async def on_message(message: nextcord.Message):
             except:
                 pass
             if not message.author.bot or str(message.author.id) in allowed_ids.get("config").get("allowed-ids"):
-                print(message.author.name)
-                print(message.embeds)
                 if not message.attachments and not message.embeds:
                     print(1)
                     # Update the message content in the API
