@@ -13,14 +13,9 @@ class SendingHandler():
         pass
 
     @classmethod
-<<<<<<< Updated upstream
     async def distribute(cls, endpoint):
         try:
             updated_json = await surrealdb_handler.get_endpoint(endpoint)
-=======
-    async def distribute(cls, endpoint, updated_json: dict):
-        try:
->>>>>>> Stashed changes
             sender = updated_json["meta"]["sender"]
 
             if sender == "guilded":

@@ -229,11 +229,7 @@ class UpdateHandler:
                         finally:
                             if not updated_json["config"]["self-user"] is True:                   
                                 if updated_json["meta"]["trigger"]:
-<<<<<<< Updated upstream
-                                    await sending_handler.SendingHandler.distribute(endpoint)
-=======
                                     asyncio.create_task(sending_handler.SendingHandler.distribute(endpoint, updated_json))
->>>>>>> Stashed changes
                                     print("Distributed")
                                     waiting_secs = 0
                                     max_secs = 10
@@ -345,72 +341,4 @@ class UpdateHandler:
         except Exception as e:
             logging.error("An error occurred: %s", e)
             logging.error(traceback.format_exc())
-<<<<<<< Updated upstream
             return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
-
-
-
-class Validator:
-
-    @classmethod
-    async def validate_endpoint(cls, endpoint: int, token: str = None):
-        healthy_endpoint_data = {
-            "config": {
-                "self-user": False,
-                "webhooks": {
-                    "discord": [],
-                    "guilded": [],
-                    "revolt": [],
-                    "nerimity": []
-                },
-                "channels": {
-                    "discord": [],
-                    "guilded": [],
-                    "revolt": [],
-                    "nerimity": []
-                },
-                "logs": {
-                    "discord": None,
-                    "guilded": None,
-                    "revolt": None,
-                    "nerimity": None
-                },
-                "blacklist": [],
-                "allowed-ids": [],
-                "isbeta": False
-            },
-            "meta": {
-                "sender-channel": None,
-                "trigger": False,
-                "sender": None,
-                "read": {
-                    "discord": False,
-                    "guilded": False,
-                    "revolt": False,
-                    "nerimity": False
-                },
-                "message": {
-                    "author": {
-                        "name": None,
-                        "avatar": None,
-                        "id": None
-                    },
-                    "content": None,
-                    "attachments": []
-                }
-            }
-        }
-        endpoint_data = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r"))
-        if token is not None:
-            if token == config.MASTER_TOKEN:
-                if endpoint_data == healthy_endpoint_data:
-                    return fastapi.responses.JSONResponse(status_code=200, content={"message": "Endpoint is healthy."})
-                else:
-                    return fastapi.responses.JSONResponse(status_code=400, content={"message": "Endpoint is not healthy."})
-            else:
-                return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
-        else:
-            return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
-=======
-            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
->>>>>>> Stashed changes

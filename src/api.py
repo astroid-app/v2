@@ -12,10 +12,7 @@ import secrets
 from typing import Annotated
 import astroidapi.endpoint_update_handler
 import astroidapi.errors
-<<<<<<< Updated upstream
-=======
 import astroidapi.health_check
->>>>>>> Stashed changes
 import astroidapi.read_handler
 import astroidapi.surrealdb_handler
 import beta_users
@@ -273,11 +270,7 @@ async def get_endpoint(endpoint: int,
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
                 return fastapi.responses.JSONResponse(status_code=200, content=await astroidapi.surrealdb_handler.get_endpoint(endpoint))
-<<<<<<< Updated upstream
-            except astroidapi.errors.SurrealDBHandler.GetEndpointError.EndpointNotFoundError as e:
-=======
             except astroidapi.errors.SurrealDBHandler.EndpointNotFoundError as e:
->>>>>>> Stashed changes
                 return fastapi.responses.JSONResponse(status_code=404, content={"message": f"Endpoint {endpoint} not found."})
             except astroidapi.errors.SurrealDBHandler.GetEndpointError as e:
                 return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
@@ -430,16 +423,11 @@ async def post_endpoint(
 
 
 @api.patch("/sync", description="Sync the local files with the database.")
-<<<<<<< Updated upstream
-async def sync_files():
-    await astroidapi.surrealdb_handler.sync_local_files(f"{pathlib.Path(__file__).parent.parent.resolve()}/src/endpoints")
-=======
 async def sync_files(endpoint: int = None):
     if endpoint:
         await astroidapi.surrealdb_handler.sync_local_files(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", True)
     else:
         await astroidapi.surrealdb_handler.sync_local_files(f"{pathlib.Path(__file__).parent.resolve()}/endpoints")
->>>>>>> Stashed changes
     return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
 
 
