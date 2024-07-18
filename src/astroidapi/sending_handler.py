@@ -13,9 +13,8 @@ class SendingHandler():
         pass
 
     @classmethod
-    async def distribute(cls, endpoint):
+    async def distribute(cls, endpoint, updated_json):
         try:
-            updated_json = await surrealdb_handler.get_endpoint(endpoint)
             sender = updated_json["meta"]["sender"]
 
             if sender == "guilded":
