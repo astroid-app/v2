@@ -258,7 +258,7 @@ class Client(commands.CommandsClient):
             await ctx.reply(":x: - Your endpoint could not be found.")
 
 
-    async def set_logs(self, ctx):
+    async def (self, ctx):
         endpoint = get_endpoint(ctx.server)
         if endpoint:
             requests.post(

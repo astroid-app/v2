@@ -1,27 +1,46 @@
 import asyncio
 import json
 import os
-import asyncio
 import pathlib
 import traceback
 import aiohttp
 import uvicorn
 import fastapi
-import nextcord
-import guilded
 import Bot.config
 import fastapi.security
 import secrets
-from typing import Annotated, Optional, List
-import re
+from typing import Annotated
+import astroidapi.endpoint_update_handler
+import astroidapi.errors
+import astroidapi.read_handler
+import astroidapi.surrealdb_handler
 import beta_users
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import sentry_sdk
-import PIL
 from PIL import Image
-from fastapi import HTTPException, Response
-from pydantic import BaseModel, Field
+from fastapi import HTTPException
+import time
+import slowapi
+from slowapi.errors import RateLimitExceeded
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+import logging
+import astroidapi
+
+# Configure logging to log to a file
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+rootLogger = logging.getLogger()
+
+fileHandler = logging.FileHandler("_astroidapi.log", mode="a")
+fileHandler.setFormatter(logFormatter)
+rootLogger.addHandler(fileHandler)
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+rootLogger.addHandler(consoleHandler)
+
+
 
 sentry_sdk.init(
     dsn=Bot.config.SENTRY_DSN,
@@ -35,12 +54,17 @@ sentry_sdk.init(
 )
 
 
+limiter = Limiter(key_func=get_remote_address)
 api = fastapi.FastAPI(
     title="Astroid API",
     description="Astroid API for getting and modifying endpoints.",
     version="2.1.4",
     docs_url=None
 )
+api.state.limiter = limiter
+api.add_exception_handler(RateLimitExceeded, slowapi._rate_limit_exceeded_handler)
+
+
 
 
 api.add_middleware(
@@ -51,15 +75,22 @@ api.add_middleware(
     allow_headers=["*"],
 )
 
+@api.get("/viewlogs")
+def view_logs(token: Annotated[str, fastapi.Query(max_length=85, min_length=10)])	:
+    if token == Bot.config.LOG_TOKEN:
+        with open("astroidapi.log", "r") as file:
+            return fastapi.responses.PlainTextResponse(status_code=200, content=file.read())
+    else:
+        return fastapi.responses.Response(status_code=404)
+
 @api.get("/assets/{asset}", description="Get an asset.")
 def get_asset(asset: str, width: int = None, height: int = None):
     if not width and not height:
         try:
             return fastapi.responses.FileResponse(f"{pathlib.Path(__file__).parent.parent.resolve()}/assets/{asset}")
-        except FileNotFoundError:
+        except:
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This asset does not exist."})
     else:
-        print(width, height)
         if asset == "logo_no_bg":
             image = Image.open(f"{pathlib.Path(__file__).parent.parent.resolve()}/assets/Astroid Logo no bg.png")
             new_image = image.resize((width, height))
@@ -77,6 +108,41 @@ def get_asset(asset: str, width: int = None, height: int = None):
             return fastapi.responses.FileResponse(f"{pathlib.Path(__file__).parent.parent.resolve()}/assets/resized/Astroid-banner{width}x{height}.png")
         else:
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This asset does not exist."})
+
+
+monitor_data = {
+    "discord": {"status": "", "last_request_time": time.time()},
+    "guilded": {"status": "", "last_request_time": time.time()},
+    "discord-beta": {"status": "", "last_request_time": time.time()},
+    "revolt-beta": {"status": "", "last_request_time": time.time()},
+    "guilded-beta": {"status": "", "last_request_time": time.time()},
+    "manager": {"status": "", "last_request_time": time.time()},
+}
+
+@api.post("/monitor/iamup/{service}", description="Monitor if the service is up.")
+async def monitor(service: str):
+    current_time = time.time()
+    try:
+        for _service in monitor_data:
+            if current_time - monitor_data[_service]["last_request_time"] >= 16:
+                monitor_data[_service]["status"] = "down"
+                try:
+                    requests.post("http://ntfy.sh/Astroid", data=f"Astroid {_service} is down.")
+                except:
+                    logging.log("[MONITOR] Failed to send notification.")
+                    pass
+            else:
+                monitor_data[service]["status"] = "up"
+                monitor_data[service]["last_request_time"] = current_time
+        return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
+    except:
+        logging.exception("ERROR")
+        return fastapi.responses.JSONResponse(status_code=500, content={"message": "An error occurred."})
+
+
+@api.get("/monitor", description="Monitor if the services are up.")
+def monitor_all():
+    return fastapi.responses.JSONResponse(status_code=200, content=monitor_data)
 
 @api.get("/docs", description="Get the documentation.")
 def docs():
@@ -140,17 +206,17 @@ def parameters():
 def responses():
     return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/responses.json", "r"))
 
+
 @api.get("/getserverstructure", description="Get a server structure.")
 def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     global data_token
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{id}"]
     except:
-        traceback.print_exc()
+        logging.exception(traceback.print_exc())
         data_token = None
         pass
     if token is not None:
-        print(Bot.config.DISCORD_TOKEN)
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             headers = {
                 'Authorization': f'Bot {Bot.config.DISCORD_TOKEN}',
@@ -191,7 +257,7 @@ def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length
 
 
 @api.get("/{endpoint}", description="Get an endpoint.")
-def get_endpoint(endpoint: int,
+async def get_endpoint(endpoint: int,
                  token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None, download: bool = False):
     global data_token
     try:
@@ -202,15 +268,13 @@ def get_endpoint(endpoint: int,
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
-                if download is True:
-                    return fastapi.responses.FileResponse(
-                        f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json",
-                        media_type='application/octet-stream', filename=f"astriod-api-{endpoint}-{token}.json")
-                else:
-                    return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r"))
-            except FileNotFoundError:
-                return fastapi.responses.JSONResponse(status_code=404, content={
-                    "message": "This endpoint does not exist."})
+                return fastapi.responses.JSONResponse(status_code=200, content=await astroidapi.surrealdb_handler.get_endpoint(endpoint))
+            except astroidapi.errors.SurrealDBHandler.GetEndpointError.EndpointNotFoundError as e:
+                return fastapi.responses.JSONResponse(status_code=404, content={"message": f"Endpoint {endpoint} not found."})
+            except astroidapi.errors.SurrealDBHandler.GetEndpointError as e:
+                return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+            except Exception as e:
+                logging.exception(traceback.print_exc())
         else:
             return fastapi.responses.JSONResponse(status_code=401,
                                                   content={"message": "The provided token is invalid."})
@@ -260,7 +324,6 @@ def new_token(endpoint: int,
     if master_token == Bot.config.MASTER_TOKEN:
         with open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r+") as tokens:
             token = secrets.token_urlsafe(53)
-            print(token)
             data = json.load(tokens)
             data[f"{endpoint}"] = token
             tokens.seek(0)
@@ -274,31 +337,6 @@ def new_token(endpoint: int,
 
 def validate_response():
     return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
-
-class EndpointUpdateRequest(BaseModel):
-    webhook_discord: Optional[str] = Field(None, max_length=350, min_length=50)
-    webhook_guilded: Optional[str] = Field(None, max_length=350, min_length=50)
-    webhook_revolt: Optional[str] = Field(None, max_length=350, min_length=50)
-    log_discord: Optional[int]
-    log_guilded: Optional[str] = Field(None, max_length=50, min_length=5)
-    log_revolt: Optional[str] = Field(None, max_length=50, min_length=5)
-    channel_discord: Optional[int]
-    channel_guilded: Optional[str] = Field(None, max_length=150, min_length=5)
-    channel_revolt: Optional[str] = Field(None, max_length=50, min_length=5)
-    blacklist: Optional[str] = Field(None, max_length=250, min_length=1)
-    sender_channel: Optional[str] = Field(None, max_length=80, min_length=10)
-    trigger: Optional[bool]
-    sender: Optional[str] = Field(None, max_length=10, min_length=5)
-    message_author_name: Optional[str] = Field(None, max_length=50, min_length=1)
-    message_author_avatar: Optional[str] = Field(None, max_length=250, min_length=50)
-    allowed_ids: Optional[str] = Field(None, max_length=50, min_length=5)
-    message_author_id: Optional[str] = Field(None, max_length=50, min_length=5)
-    message_content: Optional[str] = Field(None, max_length=1500)
-    message_attachments: Optional[str] = Field(None, max_length=1550, min_length=20)
-    message_embed: Optional[str] = Field(None, max_length=1500)
-    selfuse: Optional[bool]
-    token: Optional[str] = Field(None, max_length=85, min_length=71)
-    beta: Optional[bool] = False
 
 async def update_json_file(endpoint: str, data: dict, field: str, value):
     if value:
@@ -325,12 +363,15 @@ async def post_endpoint(
     webhook_discord: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
     webhook_guilded: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
     webhook_revolt: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
+    webhook_nerimity: Annotated[str, fastapi.Query(max_length=350, min_length=50)] = None,
     log_discord: str = None,
     log_guilded: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
     log_revolt: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
+    log_nerimity: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
     channel_discord: str = None,
     channel_guilded: Annotated[str, fastapi.Query(max_length=150, min_length=5)] = None,
     channel_revolt: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
+    channel_nerimity: Annotated[str, fastapi.Query(max_length=50, min_length=5)] = None,
     blacklist: Annotated[str, fastapi.Query(max_length=250, min_length=1)] = None,
     sender_channel: Annotated[str, fastapi.Query(max_length=80, min_length=10)] = None,
     trigger: bool = None,
@@ -344,315 +385,100 @@ async def post_endpoint(
     message_embed: Annotated[str, fastapi.Query(max_length=1500)] = None,
     selfuse: bool = None,
     token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None,
-    beta: bool = False
+    beta: bool = False,
+    only_check = False,
 ):
-    try:
-        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
-
-        if token is not None:
-            if token == Bot.config.MASTER_TOKEN or token == data_token:
-                if f"{endpoint}.json" in os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/endpoints"):
-                    file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
-                    json_file = json.load(file)
-
-                    if beta is True:
-                        json_file["config"]["isbeta"] = True
-
-                    if webhook_discord:
-                        if webhook_discord in json_file["config"]["webhooks"]["discord"]:
-                            return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
-                        elif index is not None:
-                            json_file["config"]["webhooks"]["discord"][index] = webhook_discord
-                        else:
-                            json_file["config"]["webhooks"]["discord"].append(webhook_discord)
-
-                    if webhook_guilded:
-                        if webhook_guilded in json_file["config"]["webhooks"]["guilded"]:
-                            return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
-                        elif index is not None:
-                            json_file["config"]["webhooks"]["guilded"][index] = webhook_guilded
-                        else:
-                            json_file["config"]["webhooks"]["guilded"].append(webhook_guilded)
-
-                    if webhook_revolt:
-                        if webhook_revolt in json_file["config"]["webhooks"]["revolt"]:
-                            return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
-                        elif index is not None:
-                            json_file["config"]["webhooks"]["revolt"][index] = webhook_revolt
-                        else:
-                            json_file["config"]["webhooks"]["revolt"].append(webhook_revolt)
-
-                    if selfuse is True or selfuse is False:
-                        json_file["config"]["self-user"] = selfuse
-
-                    if log_discord:
-                        json_file["config"]["logs"]["discord"] = log_discord
-
-                    if log_guilded:
-                        json_file["config"]["logs"]["guilded"] = log_guilded
-
-                    if log_revolt:
-                        json_file["config"]["logs"]["revolt"] = log_revolt
-
-                    if channel_discord:
-                        if channel_discord in json_file["config"]["channels"]["discord"]:
-                            return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
-                        elif index is not None:
-                            json_file["config"]["channels"]["discord"][index] = channel_discord
-                        else:
-                            json_file["config"]["channels"]["discord"].append(channel_discord)
-
-                    if channel_guilded:
-                        if channel_guilded in json_file["config"]["channels"]["guilded"]:
-                            return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
-                        elif index is not None:
-                            json_file["config"]["channels"]["guilded"][index] = channel_guilded
-                        else:
-                            json_file["config"]["channels"]["guilded"].append(channel_guilded)
-
-                    if channel_revolt:
-                        if channel_revolt in json_file["config"]["channels"]["revolt"]:
-                            return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
-                        elif index is not None:
-                            json_file["config"]["channels"]["revolt"][index] = channel_revolt
-                        else:
-                            json_file["config"]["channels"]["revolt"].append(channel_revolt)
-
-                    if blacklist:
-                        if "," in blacklist:
-                            for val in blacklist.split(","):
-                                if val.lower() not in [x.lower() for x in json_file["config"]["blacklist"]]:
-                                    json_file["config"]["blacklist"].append(val.lower())
-                        else:
-                            if blacklist.lower() not in json_file["config"]["blacklist"]:
-                                if index is not None:
-                                    json_file["config"]["blacklist"][index] = blacklist.lower()
-                                else:
-                                    json_file["config"]["blacklist"].append(blacklist.lower())
-
-                    if trigger:
-                        json_file["meta"]["trigger"] = trigger
-
-                    if sender_channel:
-                        json_file["meta"]["sender-channel"] = sender_channel
-
-                    if sender:
-                        if sender in ["discord", "guilded", "revolt"]:
-                            json_file["meta"]["sender"] = sender
-                            json_file["meta"]["read"][sender] = True
-                        else:
-                            return fastapi.responses.JSONResponse(status_code=400, content={"message": "Invalid sender."})
-
-                    if message_author_name:
-                        json_file["meta"]["message"]["author"]["name"] = message_author_name
-
-                    if message_author_avatar:
-                        json_file["meta"]["message"]["author"]["avatar"] = message_author_avatar
-
-                    if allowed_ids:
-                        if "," in allowed_ids:
-                            for val in allowed_ids.split(","):
-                                if val not in json_file["config"]["allowed-ids"]:
-                                    json_file["config"]["allowed-ids"].append(val)
-                        else:
-                            if allowed_ids not in json_file["config"]["allowed-ids"]:
-                                if index is not None:
-                                    json_file["config"]["allowed-ids"][index] = allowed_ids
-                                else:
-                                    json_file["config"]["allowed-ids"].append(allowed_ids)
-
-                    if message_author_id:
-                        json_file["meta"]["message"]["author"]["id"] = message_author_id
-
-                    if message_content:
-                        if sender == "discord":
-                            if "http" in message_content or "https" in message_content:
-                                urls = re.findall(r'(https?://\S+)', message_content)
-                                for url in urls:
-                                    image_markdown = f"![{url}]({url})"
-                                    message_content = message_content.replace(url, image_markdown) + message_content.split(url)[1]
-                            json_file["meta"]["message"]["content"] = message_content
-                        else:
-                            json_file["meta"]["message"]["content"] = message_content
-
-                    if message_attachments:
-                        if "," in message_attachments:
-                            for val in message_attachments.split(","):
-                                if val.lower() not in [x.lower() for x in json_file["meta"]["message"]["attachments"]]:
-                                    if sender == "discord":
-                                        json_file["meta"]["message"]["attachments"].append(f"![]({val})")
-                                    else:
-                                        json_file["meta"]["message"]["attachments"].append(val)
-                        else:
-                            json_file["meta"]["message"]["attachments"] = []
-
-                    if message_embed:
-                        embed_object = json.loads(message_embed.replace("'", '"'))
-                        json_file["meta"]["message"]["embed"] = embed_object
-                    
-
-                    file.seek(0)
-                    json.dump(json_file, file)
-                    file.truncate()
-                    file.close()
-
-                    updated_json = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+"))
-
-                    if not updated_json["config"]["self-user"] is True:
-                        if updated_json["meta"]["trigger"]:
-                            await send_webhook_notifications(updated_json, endpoint)
-                            waiting_secs = 0
-                            max_secs = 10
-                            while True:
-                                check_file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
-                                check_json = json.load(check_file)
-                                if (check_json["meta"]["read"]["discord"] == True
-                                        and check_json["meta"]["read"]["guilded"] == True
-                                        and check_json["meta"]["read"]["revolt"] == True):
-                                    check_json["meta"]["message"]["content"] = None
-                                    check_json["meta"]["message"]["attachments"].clear()
-                                    check_json["meta"]["message"]["author"]["avatar"] = None
-                                    check_json["meta"]["message"]["author"]["name"] = None
-                                    check_json["meta"]["message"]["author"]["id"] = None
-                                    check_json["meta"]["trigger"] = False
-                                    check_json["meta"]["sender"] = None
-                                    check_json["meta"]["sender-channel"] = None
-                                    check_json["meta"]["read"]["discord"] = False
-                                    check_json["meta"]["read"]["guilded"] = False
-                                    check_json["meta"]["read"]["revolt"] = False
-                                    check_file.seek(0)
-                                    json.dump(check_json, check_file)
-                                    check_file.truncate()
-                                    check_file.close()
-                                    break
-
-                                await asyncio.sleep(1)
-                                waiting_secs += 1
-                                if waiting_secs >= max_secs:
-                                    check_json["meta"]["message"]["content"] = None
-                                    check_json["meta"]["message"]["attachments"].clear()
-                                    check_json["meta"]["message"]["author"]["avatar"] = None
-                                    check_json["meta"]["message"]["author"]["name"] = None
-                                    check_json["meta"]["message"]["author"]["id"] = None
-                                    check_json["meta"]["trigger"] = False
-                                    check_json["meta"]["sender"] = None
-                                    check_json["meta"]["sender-channel"] = None
-                                    check_json["meta"]["read"]["discord"] = False
-                                    check_json["meta"]["read"]["guilded"] = False
-                                    check_json["meta"]["read"]["revolt"] = False
-                                    check_file.seek(0)
-                                    json.dump(check_json, check_file)
-                                    check_file.truncate()
-                                    check_file.close()
-                                    break
-
-                        else:
-                            return fastapi.responses.JSONResponse(
-                                status_code=200,
-                                content={"message": "This endpoint activated self-usage."},
-                            )
-
-                    return fastapi.responses.JSONResponse(status_code=200, content=json_file)
-                else:
-                    return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
-            else:
-                return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
-        else:
-            return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
-    except Exception as e:
-        traceback.print_exc()
-        return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
-
-async def send_webhook_notifications(updated_json, endpoint):
-    sender = updated_json["meta"]["sender"]
-    if sender == "guilded":
-        await send_discord_notifications(updated_json, endpoint)
-    if sender == "discord":
-        await send_guilded_notifications(updated_json, endpoint)
-    if sender == "revolt":
-        await send_from_revolt(updated_json, endpoint)
+    await astroidapi.endpoint_update_handler.UpdateHandler.update_endpoint(
+        endpoint=endpoint,
+        index=index,
+        webhook_discord=webhook_discord,
+        webhook_guilded=webhook_guilded,
+        webhook_revolt=webhook_revolt,
+        webhook_nerimity=webhook_nerimity,
+        log_discord=log_discord,
+        log_guilded=log_guilded,
+        log_revolt=log_revolt,
+        log_nerimity=log_nerimity,
+        channel_discord=channel_discord,
+        channel_guilded=channel_guilded,
+        channel_revolt=channel_revolt,
+        channel_nerimity=channel_nerimity,
+        blacklist=blacklist,
+        sender_channel=sender_channel,
+        trigger=trigger,
+        sender=sender,
+        message_author_name=message_author_name,
+        message_author_avatar=message_author_avatar,
+        allowed_ids=allowed_ids,
+        message_author_id=message_author_id,
+        message_content=message_content,
+        message_attachments=message_attachments,
+        message_embed=message_embed,
+        selfuse=selfuse,
+        token=token,
+        beta=beta,
+        only_check=only_check,
+    )
 
 
-async def send_from_revolt(updated_json, endpoint):
-    discord_webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
-    async with aiohttp.ClientSession() as session:
-        webhook_obj = nextcord.Webhook.from_url(discord_webhook, session=session)
-        await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=updated_json["meta"]["message"]["author"]["name"])
-        await session.post(f"https://astroid.deutscher775.de/read/{endpoint}?token={Bot.config.MASTER_TOKEN}&read_discord=true")
-    guilded_webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
-    async with aiohttp.ClientSession() as session:
-        webhook_obj = guilded.Webhook.from_url(guilded_webhook, session=session)
-        await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=updated_json["meta"]["message"]["author"]["name"])
-        await session.post(f"https://astroid.deutscher775.de/read/{endpoint}?token={Bot.config.MASTER_TOKEN}&read_guilded=true")
-
-async def send_discord_notifications(updated_json, endpoint):
-    webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
-    async with aiohttp.ClientSession() as session:
-        webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
-        await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=updated_json["meta"]["message"]["author"]["name"])
-        await session.post(f"https://astroid.deutscher775.de/read/{endpoint}?token={Bot.config.MASTER_TOKEN}&read_discord=true")
-
-
-
-async def send_guilded_notifications(updated_json, endpoint):
-    webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
-    async with aiohttp.ClientSession() as session:
-        webhook_obj = guilded.Webhook.from_url(webhook, session=session)
-        await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=updated_json["meta"]["message"]["author"]["name"])
-        await session.post(f"https://astroid.deutscher775.de/read/{endpoint}?token={Bot.config.MASTER_TOKEN}&read_guilded=true")
-
+@api.patch("/sync", description="Sync the local files with the database.")
+async def sync_files():
+    await astroidapi.surrealdb_handler.sync_local_files(f"{pathlib.Path(__file__).parent.parent.resolve()}/src/endpoints")
+    return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
 
 
 @api.post("/read/{endpoint}",
           description="Mark the 'meta' as read on the platform(s). "
                       "[Note: Currently only used in the astroid Revolt-bot.]")
-def mark_read(endpoint: int,
+async def mark_read(endpoint: int,
               token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None,
               read_discord: bool = None,
               read_guilded: bool = None,
-              read_revolt: bool = None):
+              read_revolt: bool = None,
+              read_nerimity: bool = None):
     if token == data_token or token == Bot.config.MASTER_TOKEN:
-        file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
-        json_file = json.load(file)
-        if read_discord:
-            json_file["meta"]["read"]["discord"] = True
-        if read_guilded:
-            json_file["meta"]["read"]["guilded"] = True
-        if read_revolt:
-            json_file["meta"]["read"]["revolt"] = True
         try:
-            file.seek(0)
-            json.dump(json_file, file)
-            file.truncate()
-            file.close()
-        except:
-            traceback.print_exc()
+            if read_discord:
+                await astroidapi.read_handler.ReadHandler.mark_read(endpoint, "discord")
+            if read_guilded:
+                await astroidapi.read_handler.ReadHandler.mark_read(endpoint, "guilded")
+            if read_revolt:
+                await astroidapi.read_handler.ReadHandler.mark_read(endpoint, "revolt")
+            if read_nerimity:
+                await astroidapi.read_handler.ReadHandler.mark_read(endpoint, "nerimity")
+        except Exception as e:
+            logging.exception(traceback.print_exc())
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+        return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
+    
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
 
 
 @api.post("/create", description="Create an endpoint.",
           response_description="Endpoints data.")
-def create_endpoint(endpoint: int):
+async def create_endpoint(endpoint: int):
     try:
-        file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "x")
         data = {
             "config": {
                 "self-user": False,
                 "webhooks": {
                     "discord": [],
                     "guilded": [],
-                    "revolt": []
+                    "revolt": [],
+                    "nerimity": []
                 },
                 "channels": {
                     "discord": [],
                     "guilded": [],
-                    "revolt": []
+                    "revolt": [],
+                    "nerimity": []
                 },
                 "logs": {
                     "discord": None,
                     "guilded": None,
-                    "revolt": None
+                    "revolt": None,
+                    "nerimity": None
                 },
                 "blacklist": [],
                 "allowed-ids": [],
@@ -665,7 +491,8 @@ def create_endpoint(endpoint: int):
                 "read": {
                     "discord": False,
                     "guilded": False,
-                    "revolt": False
+                    "revolt": False,
+                    "nerimity": False
                 },
                 "message": {
                     "author": {
@@ -678,21 +505,21 @@ def create_endpoint(endpoint: int):
                 }
             }
         }
-        json.dump(data, file)
+        await astroidapi.surrealdb_handler.create(endpoint, data)
         return fastapi.responses.JSONResponse(status_code=201, content={"message": "Created."})
     except FileExistsError:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint exists already."})
 
 
 @api.delete("/delete/{endpoint}", description="Delete an endpoint.")
-def delete_endpoint(endpoint: int,
+async def delete_endpoint(endpoint: int,
                     token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
         if token is not None:
             if token == data_token or token == Bot.config.MASTER_TOKEN:
                 try:
-                    os.remove(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json")
+                    await astroidapi.surrealdb_handler.delete(endpoint)
                     return fastapi.responses.JSONResponse(status_code=200, content={"message": "Deleted."})
                 except FileNotFoundError:
                     return fastapi.responses.JSONResponse(status_code=404,
@@ -742,7 +569,6 @@ def delete_enpoint_data(endpoint: int,
                 json_file = open(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", "r+")
                 json_data = json.load(json_file)
                 if webhook_discord:
-                    print(json_data["config"]["webhooks"]["discord"].index(webhook_discord))
                     json_data["config"]["webhooks"]["discord"][json_data["config"]["webhooks"]["discord"].index(webhook_discord)] = None
                 if webhook_guilded:
                     json_data["config"]["webhooks"]["guilded"][json_data["config"]["webhooks"]["guilded"].index(webhook_guilded)] = None
@@ -810,6 +636,8 @@ def delete_enpoint_data(endpoint: int,
                                                   content={"message": "The provided token is invalid."})
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
+    
 
+logging.info("[CORE] API started.")
 
-asyncio.run(uvicorn.run(api, host="localhost", port=9921))
+uvicorn.run(api, host="localhost", port=9921)

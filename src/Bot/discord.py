@@ -6,6 +6,7 @@ import config
 import aiohttp
 import traceback
 import sentry_sdk
+import asyncio
 
 sentry_sdk.init(
     dsn=config.SENTRY_DSN,
@@ -36,6 +37,14 @@ session = aiohttp.ClientSession()
 async def on_ready():
     await client.sync_all_application_commands()
     print(f"Logged in as {client.user} ({client.user.id})")
+    #while True:
+    #    async with aiohttp.ClientSession() as session:
+    #        async with session.post(f"https://astroid.deutscher775.de/monitor/iamup/discord") as r:
+    #            if r.status == 200:
+    #                print("Sent up status.")
+    #            else:
+    #                print("Could not send up status.")
+    #    await asyncio.sleep(10)
 
 # Slash command to send an embed
 @client.slash_command(name="send-embed")
@@ -52,6 +61,10 @@ async def send_embed(interaction: nextcord.Interaction):
 # Event handler for message deletion
 @client.event
 async def on_message_delete(message: nextcord.Message):
+    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as isbeta:
+        isbeta = await isbeta.json()
+        if isbeta.get("config").get("isbeta"):
+            return
     # Get channel information from the API
     async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as channel_request:
         channel_json = await channel_request.json()
@@ -67,6 +80,10 @@ async def on_message_delete(message: nextcord.Message):
 # Event handler for message edit
 @client.event
 async def on_message_edit(before: nextcord.Message, after: nextcord.Message):
+    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as isbeta:
+        isbeta = await isbeta.json()
+        if isbeta.get("config").get("isbeta"):
+            return
     # Get channel information from the API
     async with session.get(f"https://astroid.deutscher775.de/{before.guild.id}?token={config.MASTER_TOKEN}") as channel_request:
         channel_json = await channel_request.json()
@@ -136,20 +153,20 @@ async def on_message(message: nextcord.Message):
                         for field in message.embeds[0].fields:
                             embed["fields"].append({"name": field.name, "value": field.value, "inline": str(field.inline).lower()})
                     # Update the message content with embed in the API
-                    async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_embed={embed}") as update_request:
+                    async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_embed={embed}") as update_request:
                         pass
                 if message.attachments:
                     print(3)
                     if len(message.attachments) == 1:
                         # Update the message content with attachment in the API
-                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url}") as update_request:
+                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url}") as update_request:
                             pass
                     else:
                         attachments = ""
                         for attachment in message.attachments:
                             attachments += attachment.url
                         # Update the message content with multiple attachments in the API
-                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}") as update_request:
+                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}") as update_request:
                             pass
     except KeyError:
         pass

@@ -8,6 +8,7 @@ import pathlib
 import datetime
 import traceback
 import sentry_sdk
+import asyncio
 
 sentry_sdk.init(
     dsn=config.SENTRY_DSN,
@@ -37,6 +38,18 @@ async def post_json(url, data):
         async with session.post(url, json=data) as response:
             return await response.json()
 
+@client.event
+async def on_ready():
+    print(f"Logged in as {client.user.name} - {client.user.id}")
+    #while True:
+    #    async with aiohttp.ClientSession() as session:
+    #        async with session.post(f"https://astroid.deutscher775.de/monitor/iamup/guilded") as r:
+    #            if r.status == 200:
+    #                print("Sent up status.")
+    #            else:
+    #                print("Could not send up status.")
+    #        await session.close()
+    #    await asyncio.sleep(10)
 
 @client.event
 async def on_message_delete(message: guilded.Message):
@@ -45,6 +58,18 @@ async def on_message_delete(message: guilded.Message):
         "r",
     )
     endpoint = json.load(endpoint_file)["discord"]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
+                if data["config"]["isbeta"]:
+                    return
+    except IndexError:
+        pass
+    except KeyError:
+        pass
+    except:
+        traceback.print_exc()
 
     channels_url = (
         f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
@@ -78,6 +103,18 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
         "r",
     )
     endpoint = json.load(endpoint_file)["discord"]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
+                if data["config"]["isbeta"]:
+                    return
+    except IndexError:
+        pass
+    except KeyError:
+        pass
+    except:
+        traceback.print_exc()
 
     channels_url = (
         f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
@@ -251,19 +288,25 @@ async def send_embed(ctx):
 
 @client.event
 async def on_message(message: guilded.Message):
-    async with aiohttp.ClientSession() as session:
-        endpoint = json.load(open(f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.guild.id}.json", "r"))["discord"]
-        async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as isbeta:
-            isbeta = await isbeta.json()
-            if isbeta.get("config").get("isbeta"):
-                return
-    await client.process_commands(message)
     try:
         endpoint_file = open(
             f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.server.id}.json",
             "r",
         )
         endpoint = json.load(endpoint_file)["discord"]
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
+                    data = await response.json()
+                    if data["config"]["isbeta"]:
+                        return
+        except IndexError:
+            pass
+        except KeyError:
+            pass
+        except:
+            traceback.print_exc()
+        await client.process_commands(message)
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
@@ -279,16 +322,14 @@ async def on_message(message: guilded.Message):
                                 colour=0xF5C400,
                             )
                             await message.delete()
-                            channel = await client.fetch_channel(
-                                str(data["config"]["logs"]["guilded"])
-                            ).close()
+                            channel = await client.fetch_channel(str(data["config"]["logs"]["guilded"]))
                             await channel.send(embed=embed)
                             return
                     allowed_ids = data["config"]["allowed-ids"]
                     if not message.author.bot or message.author.id in allowed_ids:
                         if not message.attachments and not message.embeds:
                             async with session.post(
-                                f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}"
+                                f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}"
                             ) as response:
                                 pass
                         elif message.embeds:
@@ -303,7 +344,7 @@ async def on_message(message: guilded.Message):
                         elif message.attachments:
                             if len(message.attachments) == 1:
                                 async with session.post(
-                                    f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}"
+                                    f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}"
                                 ) as response:
                                     pass
                         else:
@@ -315,14 +356,17 @@ async def on_message(message: guilded.Message):
                                     .replace(")", "")
                                 )
                             async with session.post(
-                                f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}"
+                                f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}"
                             ) as response:
                                 pass
     except FileNotFoundError:
+        await client.process_commands(message)
         pass
     except KeyError:
+        await client.process_commands(message)
         pass
     except:
+        await client.process_commands(message)
         traceback.print_exc()
 
 
