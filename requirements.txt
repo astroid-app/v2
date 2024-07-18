@@ -5,3 +5,5 @@ fastapi
 uvicorn
 voltage=<0.1.5a8
 re
+surrealdb
+aiohttp

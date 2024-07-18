@@ -14,6 +14,7 @@ TMP
 __pycache__
 endpoints*
 tokens*
+<<<<<<< Updated upstream
 tokens.json
 config.py
 website*
@@ -28,3 +29,18 @@ src/csdsc.py
 src/Copy of Copy of api.py
 src/Copy of api.py
 src/Bot/config.py
+=======
+src/tokens.json
+src/Bot/config.py
+src/Bot/config.py
+src/_astroidapi.log
+/website
+src/tokens.json
+src/tokens.json
+/web
+website.zip
+/website
+src/Bot/nerimity_servers/1528027692992208896.json
+>>>>>>> Stashed changes
+src/Bot/config.py
+src/tokens.json

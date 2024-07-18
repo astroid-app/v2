@@ -102,11 +102,19 @@ class SurrealDBHandler:
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+<<<<<<< Updated upstream
         
         class EndpointNotFoundError(Exception):
             def __init__(self, message):
                 self.message = message
                 super().__init__(self.message)
+=======
+    
+    class EndpointNotFoundError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+>>>>>>> Stashed changes
     
     class SyncLocalFilesError(Exception):
         def __init__(self, message):
@@ -129,4 +137,27 @@ class ReadHandlerError:
     class AlreadyReadError(Exception):
         def __init__(self, message):
             self.message = message
+<<<<<<< Updated upstream
             super().__init__(self.message)
+=======
+            super().__init__(self.message)
+
+
+
+class HealtCheckError:
+
+    class EndpointCheckError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+        
+        class EndpointConfigError(Exception):
+            def __init__(self, message):
+                self.message = message
+                super().__init__(self.message)
+        
+        class EndpointMetaDataError(Exception):
+            def __init__(self, message):
+                self.message = message
+                super().__init__(self.message)
+>>>>>>> Stashed changes

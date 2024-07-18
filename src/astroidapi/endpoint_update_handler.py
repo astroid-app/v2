@@ -229,7 +229,11 @@ class UpdateHandler:
                         finally:
                             if not updated_json["config"]["self-user"] is True:                   
                                 if updated_json["meta"]["trigger"]:
+<<<<<<< Updated upstream
                                     await sending_handler.SendingHandler.distribute(endpoint)
+=======
+                                    asyncio.create_task(sending_handler.SendingHandler.distribute(endpoint, updated_json))
+>>>>>>> Stashed changes
                                     print("Distributed")
                                     waiting_secs = 0
                                     max_secs = 10
@@ -341,6 +345,7 @@ class UpdateHandler:
         except Exception as e:
             logging.error("An error occurred: %s", e)
             logging.error(traceback.format_exc())
+<<<<<<< Updated upstream
             return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
 
 
@@ -406,3 +411,6 @@ class Validator:
                 return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
         else:
             return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
+=======
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+>>>>>>> Stashed changes

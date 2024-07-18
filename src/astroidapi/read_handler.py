@@ -5,13 +5,21 @@ class ReadHandler:
     @classmethod
     async def mark_read(cls, endpoint, platform):
         try:
+<<<<<<< Updated upstream
+=======
+            print(f"Marking {platform} read")
+>>>>>>> Stashed changes
             endpoint_data = await surrealdb_handler.get_endpoint(endpoint)
             if endpoint_data is None:
                 raise errors.SurrealDBHandler.GetEndpointError.EndpointNotFoundError(f"'{endpoint}' not found")
             if await cls.check_read(endpoint, platform):
                 raise errors.ReadHandlerError.AlreadyReadError(f"'{endpoint}' already marked '{platform}' as read")
+<<<<<<< Updated upstream
             endpoint_data["meta"]["read"][platform] = True
             asyncio.create_task(surrealdb_handler.update(endpoint, endpoint_data))
+=======
+            await surrealdb_handler.mark_read(endpoint, platform)
+>>>>>>> Stashed changes
             return True
         except errors.ReadHandlerError.AlreadyReadError as e:
             return True
