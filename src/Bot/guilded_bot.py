@@ -55,7 +55,7 @@ async def on_ready():
 async def on_message_delete(message: guilded.Message):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 endpoint = data["discord"]
     except:
@@ -103,7 +103,7 @@ async def on_message_delete(message: guilded.Message):
 async def on_message_edit(before: guilded.Message, after: guilded.Message):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={before.server_id}token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={before.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 endpoint = data["discord"]
     except:
@@ -152,7 +152,7 @@ async def register(ctx: commands.Context, endpoint):
         await ctx.send("Invalid Format: `gc!register DISCORD_SERVER_ID`")
     else:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={ctx.message.server_id}token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 try:
                     _endpoint = data["discord"]
