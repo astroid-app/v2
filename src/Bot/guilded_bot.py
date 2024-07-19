@@ -53,11 +53,14 @@ async def on_ready():
 
 @client.event
 async def on_message_delete(message: guilded.Message):
-    endpoint_file = open(
-        f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.server.id}.json",
-        "r",
-    )
-    endpoint = json.load(endpoint_file)["discord"]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
+                endpoint = data["discord"]
+    except:
+        traceback.print_exc()
+        return
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
@@ -98,11 +101,14 @@ async def on_message_delete(message: guilded.Message):
 
 @client.event
 async def on_message_edit(before: guilded.Message, after: guilded.Message):
-    endpoint_file = open(
-        f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{before.server.id}.json",
-        "r",
-    )
-    endpoint = json.load(endpoint_file)["discord"]
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={before.server_id}token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
+                endpoint = data["discord"]
+    except:
+        traceback.print_exc()
+        return
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
@@ -141,57 +147,50 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
 
 
 @client.command()
-async def register(ctx, endpoint):
+async def register(ctx: commands.Context, endpoint):
     if endpoint == "":
         await ctx.send("Invalid Format: `gc!register DISCORD_SERVER_ID`")
     else:
-        for server_file in os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers"):
-            if server_file.endswith(".json"):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={ctx.message.server_id}token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
                 try:
-                    guilded_server = f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{server_file}"
-                    if guilded_server == endpoint:
-                        async with aiohttp.ClientSession() as session:
-                            resp = await session.get(
-                                f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}")
-                            resp_json = await resp.json()
-                            if resp_json["config"]["channels"]["guilded"]:
-                                if ctx.message.channel.id in resp_json["config"]["channels"]["guilded"]:
-                                    await ctx.message.reply("This endpoint is already registered.")
-                                    return
+                    _endpoint = data["discord"]
+                    if _endpoint == endpoint:
+                        await ctx.send("Endpoint already registered.")
+                        return
+                    else:
+                        await ctx.send("This server is registered with another endpoint. For further assistance, please contact the support server.")
+                except KeyError:
+                    async with aiohttp.ClientSession() as session: 
+                        async with session.get(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                            if response.status == 200:
+                                await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
                             else:
-                                async with aiohttp.ClientSession() as session:
-                                    await session.post(
-                                        f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={ctx.message.channel.id}&token={config.MASTER_TOKEN}")
-                            await ctx.message.reply(f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}")                        
-                            return
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                except IndexError:
+                    async with aiohttp.ClientSession() as session: 
+                        async with session.get(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                            if response.status == 200:
+                                await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
+                            else:
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
                 except Exception as e:
-                    await ctx.message.reply(f"An error occurred while trying to update the local enpoint file. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
-                    return
+                    await ctx.send(f"An error occurred while trying to register the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
 
-        try:
-            data = {"discord": endpoint}
-            json.dump(
-                data,
-                open(
-                    f"{pathlib.Path(__file__).parent.resolve()}/guilded_servers/{ctx.guild.id}.json",
-                    "x",
-                ),
-            )
-        except FileExistsError as e:
-            await ctx.message.reply(f"An error occurred while trying to update the local enpoint file. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
-            return
-        webhook = await ctx.channel.create_webhook(name="astroid")
-        r = await post_json(
-            f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={ctx.channel.id}&webhook_guilded={webhook.url}&token={config.MASTER_TOKEN}",
-            {},
-        )
-        if r.ok:
-            await ctx.send(
-                f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}"
-            )
-        else:
-            await ctx.send(f"{r['message']}")
-
+    try:
+        channel_id = ctx.channel.id
+        channel_webhook = await ctx.channel.create_webhook(name="astroid")
+        channel_webhook_url = channel_webhook.url
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
+                if data["ok"]:
+                    await ctx.send(f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}")
+                else:
+                    await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+    except Exception as e:
+        await ctx.send(f"An error occurred while trying to update the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
 
 @client.command()
 async def help(ctx):
@@ -289,11 +288,10 @@ async def send_embed(ctx):
 @client.event
 async def on_message(message: guilded.Message):
     try:
-        endpoint_file = open(
-            f"{pathlib.Path(__file__).parent.parent.resolve()}/Bot/guilded_servers/{message.server.id}.json",
-            "r",
-        )
-        endpoint = json.load(endpoint_file)["discord"]
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}token={config.MASTER_TOKEN}") as response:
+                data = await response.json()
+                endpoint = data["discord"]
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
