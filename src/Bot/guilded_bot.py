@@ -163,14 +163,14 @@ async def register(ctx: commands.Context, endpoint):
                         await ctx.send("This server is registered with another endpoint. For further assistance, please contact the support server.")
                 except KeyError:
                     async with aiohttp.ClientSession() as session: 
-                        async with session.get(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                        async with session.post(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
                                 await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
                             else:
                                 await ctx.send(f"Oops, something went wrong: `{data['message']}`")
                 except IndexError:
                     async with aiohttp.ClientSession() as session: 
-                        async with session.get(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                        async with session.post(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
                                 await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
                             else:
@@ -183,7 +183,7 @@ async def register(ctx: commands.Context, endpoint):
         channel_webhook = await ctx.channel.create_webhook(name="astroid")
         channel_webhook_url = channel_webhook.url
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
+            async with session.post(f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 if data["ok"]:
                     await ctx.send(f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}")
