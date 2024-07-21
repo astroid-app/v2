@@ -175,6 +175,13 @@ async def register(ctx: commands.Context, endpoint):
                                 await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
                             else:
                                 await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                except TypeError:
+                    async with aiohttp.ClientSession() as session: 
+                        async with session.post(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                            if response.status == 200:
+                                await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
+                            else:
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
                 except Exception as e:
                     await ctx.send(f"An error occurred while trying to register the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
 
@@ -185,7 +192,7 @@ async def register(ctx: commands.Context, endpoint):
         async with aiohttp.ClientSession() as session:
             async with session.post(f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
-                if data["ok"]:
+                if response.ok:
                     await ctx.send(f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}")
                 else:
                     await ctx.send(f"Oops, something went wrong: `{data['message']}`")
@@ -289,7 +296,7 @@ async def send_embed(ctx):
 async def on_message(message: guilded.Message):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 endpoint = data["discord"]
         try:
@@ -301,6 +308,8 @@ async def on_message(message: guilded.Message):
         except IndexError:
             pass
         except KeyError:
+            pass
+        except TypeError:
             pass
         except:
             traceback.print_exc()
