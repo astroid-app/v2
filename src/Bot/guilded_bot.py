@@ -21,10 +21,26 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 ) 
 
-client = commands.Bot(command_prefix="gc!")
+client = commands.Bot(command_prefix="a!")
 
 
 client.help_command = None
+
+
+
+async def send_iamup():
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"https://status.astroid.cc/monitor/iamup/guilded") as r:
+            if r.status == 200:
+                print("Sent up status.")
+            else:
+                print("Could not send up status.")
+
+
+async def iamup_loop():
+    while True:
+        asyncio.create_task(send_iamup())
+        await asyncio.sleep(40)
 
 
 async def fetch_json(url):
@@ -41,15 +57,8 @@ async def post_json(url, data):
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user.name} - {client.user.id}")
-    #while True:
-    #    async with aiohttp.ClientSession() as session:
-    #        async with session.post(f"https://astroid.deutscher775.de/monitor/iamup/guilded") as r:
-    #            if r.status == 200:
-    #                print("Sent up status.")
-    #            else:
-    #                print("Could not send up status.")
-    #        await session.close()
-    #    await asyncio.sleep(10)
+    await client.loop.create_task(iamup_loop())
+
 
 @client.event
 async def on_message_delete(message: guilded.Message):
@@ -149,7 +158,7 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
 @client.command()
 async def register(ctx: commands.Context, endpoint):
     if endpoint == "":
-        await ctx.send("Invalid Format: `gc!register DISCORD_SERVER_ID`")
+        await ctx.send("Invalid Format: `a!register DISCORD_SERVER_ID`")
     else:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
@@ -231,7 +240,7 @@ async def help(ctx):
 async def set_log(ctx, endpoint, channelid):
     if endpoint == "" or channelid == "":
         await ctx.send(
-            "Invalid Format: `gc!set-log DISCORD_SERVER_ID GUILDED_CHANNEL_ID`"
+            "Invalid Format: `a!set-log DISCORD_SERVER_ID GUILDED_CHANNEL_ID`"
         )
     else:
         r = await post_json(
@@ -249,7 +258,7 @@ async def set_log(ctx, endpoint, channelid):
 @client.command()
 async def allow(ctx, endpoint, allowid):
     if endpoint == "" or allowid == "":
-        await ctx.send("Invalid Format: `gc!allow DISCORD_SERVER_ID GUILDED_USER_ID`")
+        await ctx.send("Invalid Format: `a!allow DISCORD_SERVER_ID GUILDED_USER_ID`")
     else:
         r = await post_json(
             f"https://astroid.deutscher775.de/update/{endpoint}?allowed_ids={allowid}&token={config.MASTER_TOKEN}",
@@ -266,7 +275,7 @@ async def allow(ctx, endpoint, allowid):
 @client.command(aliases=["add-bridge"])
 async def add_bridge(ctx, endpoint):
     if endpoint == "":
-        await ctx.send("Invalid Format: `gc!add-bridge DISCORD_SERVER_ID`")
+        await ctx.send("Invalid Format: `a!add-bridge DISCORD_SERVER_ID`")
     else:
         webhook = await ctx.channel.create_webhook(name="astroid")
         r = await post_json(

@@ -12,6 +12,7 @@ import secrets
 from typing import Annotated
 import astroidapi.endpoint_update_handler
 import astroidapi.errors
+import astroidapi.get_channel_information
 import astroidapi.health_check
 import astroidapi.read_handler
 import astroidapi.surrealdb_handler
@@ -28,6 +29,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 import astroidapi
+import datetime
 
 # Configure logging to log to a file
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -110,41 +112,6 @@ def get_asset(asset: str, width: int = None, height: int = None):
         else:
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This asset does not exist."})
 
-
-monitor_data = {
-    "discord": {"status": "", "last_request_time": time.time()},
-    "guilded": {"status": "", "last_request_time": time.time()},
-    "discord-beta": {"status": "", "last_request_time": time.time()},
-    "revolt-beta": {"status": "", "last_request_time": time.time()},
-    "guilded-beta": {"status": "", "last_request_time": time.time()},
-    "nerimity-beta": {"status": "", "last_request_time": time.time()},
-    "manager": {"status": "", "last_request_time": time.time()},
-}
-
-@api.post("/monitor/iamup/{service}", description="Monitor if the service is up.")
-async def monitor(service: str):
-    current_time = time.time()
-    try:
-        for _service in monitor_data:
-            if current_time - monitor_data[_service]["last_request_time"] >= 16:
-                monitor_data[_service]["status"] = "down"
-                try:
-                    requests.post("http://ntfy.sh/Astroid", data=f"Astroid {_service} is down.")
-                except:
-                    logging.error("[MONITOR] Failed to send notification.")
-                    pass
-            else:
-                monitor_data[service]["status"] = "up"
-                monitor_data[service]["last_request_time"] = current_time
-        return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
-    except:
-        logging.exception("ERROR")
-        return fastapi.responses.JSONResponse(status_code=500, content={"message": "An error occurred."})
-
-
-@api.get("/monitor", description="Monitor if the services are up.")
-def monitor_all():
-    return fastapi.responses.JSONResponse(status_code=200, content=monitor_data)
 
 @api.get("/docs", description="Get the documentation.")
 def docs():
@@ -565,13 +532,13 @@ async def delete_enpoint_data(endpoint: int,
             try:
                 json_data = await astroidapi.surrealdb_handler.get_endpoint(endpoint)
                 if webhook_discord:
-                    json_data["config"]["webhooks"]["discord"].pop(webhook_discord)
+                    json_data["config"]["webhooks"]["discord"].pop(json_data["config"]["webhooks"]["discord"].index(webhook_discord))
                 if webhook_guilded:
-                    json_data["config"]["webhooks"]["guilded"].pop(webhook_guilded)
+                    json_data["config"]["webhooks"]["guilded"].pop(json_data["config"]["webhooks"]["guilded"].index(webhook_guilded))
                 if webhook_revolt:
-                    json_data["config"]["webhooks"]["revolt"].pop(webhook_revolt)
+                    json_data["config"]["webhooks"]["revolt"].pop(json_data["config"]["webhooks"]["revolt"].index(webhook_revolt))
                 if webhook_nerimity:
-                    json_data["config"]["webhooks"]["nerimity"].pop(webhook_nerimity)
+                    json_data["config"]["webhooks"]["nerimity"].pop(json_data["config"]["webhooks"]["nerimity"].index(webhook_nerimity))
                 
                 if log_discord:
                     json_data["config"]["logs"]["discord"][json_data["config"]["logs"]["discord"]] = None
@@ -587,27 +554,29 @@ async def delete_enpoint_data(endpoint: int,
                         blacklist = blacklist.split(",")
                         for word in blacklist:
                             if word in json_data["config"]["blacklist"]:
-                                json_data["config"]["blacklist"].pop(word)
+                                json_data["config"]["blacklist"].pop(json_data["config"]["blacklist"].index(word))
                     else:
                         if blacklist in json_data["config"]["blacklist"]:
-                            json_data["config"]["blacklist"].pop(blacklist)
+                            json_data["config"]["blacklist"].pop(json_data["config"]["blacklist"].index(blacklist))
 
                 if allowed_ids:
                     if "," in allowed_ids:
                         allowed_ids = allowed_ids.split(",")
                         for id in allowed_ids:
                             if id in json_data["config"]["allowed-ids"]:
-                                json_data["config"]["allowed-ids"].pop(int(id))
+                                json_data["config"]["allowed-ids"].pop(json_data["config"]["allowed-ids"].index(id))
                     else:
                         if allowed_ids in json_data["config"]["allowed-ids"]:
-                            json_data["config"]["allowed-ids"].pop(int(allowed_ids))
+                            json_data["config"]["allowed-ids"].pop(json_data["config"]["allowed-ids"].index(allowed_ids))
 
                 if channel_discord:
-                    json_data["config"]["channels"]["discord"].pop(channel_discord)
+                    json_data["config"]["channels"]["discord"].pop(json_data["config"]["channels"]["discord"].index(str(channel_discord)))
                 if channel_guilded:
-                    json_data["config"]["channels"]["guilded"].pop(channel_guilded)
+                    json_data["config"]["channels"]["guilded"].pop(json_data["config"]["channels"]["guilded"].index(channel_guilded))
                 if channel_revolt:
-                    json_data["config"]["channels"]["revolt"].pop(channel_revolt)
+                    json_data["config"]["channels"]["revolt"].pop(json_data["config"]["channels"]["revolt"].index(channel_revolt))
+                if channel_nerimity:
+                    json_data["config"]["channels"]["nerimity"].pop(json_data["config"]["channels"]["nerimity"].index(str(channel_nerimity)))
 
                 if sender_channel:
                     json_data["meta"]["sender_channel"] = None
@@ -622,7 +591,7 @@ async def delete_enpoint_data(endpoint: int,
                 if message_content:
                     json_data["meta"]["message"]["content"] = None
                 if message_attachments:
-                    json_data["meta"]["message"]["attachments"].pop(message_attachments)
+                    json_data["meta"]["message"]["attachments"].pop(json_data["meta"]["message"]["attachments"].index(message_attachments))
 
                 data = await astroidapi.surrealdb_handler.update(endpoint, json_data)
                 return fastapi.responses.JSONResponse(status_code=200, content=data)
@@ -677,6 +646,23 @@ async def syncserverrelaions():
         return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
     except Exception as e:
         return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+
+
+@api.get("/channel/name/{platform}", description="Get the channel name.")
+async def get_channel_name(platform: str, id: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    try:
+        if platform == "discord":
+            return await astroidapi.get_channel_information.GetChannelName.from_discord_id(int(id))
+        elif platform == "guilded":
+            return await astroidapi.get_channel_information.GetChannelName.from_guilded_id(id)
+        elif platform == "revolt":
+            return await astroidapi.get_channel_information.GetChannelName.from_revolt_id(id)
+        elif platform == "nerimity":
+            return await astroidapi.get_channel_information.GetChannelName.from_nerimity_id(int(id))
+        else:
+            return fastapi.responses.JSONResponse(status_code=404, content={"message": "This platform does not exist."})
+    except:
+        return fastapi.responses.JSONResponse(status_code=404, content={"message": "This channel does not exist."})
 
 
 logging.info("[CORE] API started.")

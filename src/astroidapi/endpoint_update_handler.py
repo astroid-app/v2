@@ -62,7 +62,7 @@ class UpdateHandler:
 
                         if webhook_discord:
                             if webhook_discord in endpoint_data["config"]["webhooks"]["discord"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["webhooks"]["discord"][index] = webhook_discord
                             else:
@@ -70,7 +70,7 @@ class UpdateHandler:
 
                         if webhook_guilded:
                             if webhook_guilded in endpoint_data["config"]["webhooks"]["guilded"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["webhooks"]["guilded"][index] = webhook_guilded
                             else:
@@ -78,7 +78,7 @@ class UpdateHandler:
 
                         if webhook_revolt:
                             if webhook_revolt in endpoint_data["config"]["webhooks"]["revolt"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["webhooks"]["revolt"][index] = webhook_revolt
                             else:
@@ -86,7 +86,7 @@ class UpdateHandler:
                         
                         if webhook_nerimity:
                             if webhook_nerimity in endpoint_data["config"]["webhooks"]["nerimity"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This webhook already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["webhooks"]["nerimity"][index] = webhook_nerimity
                             else:
@@ -109,7 +109,7 @@ class UpdateHandler:
 
                         if channel_discord:
                             if channel_discord in endpoint_data["config"]["channels"]["discord"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["channels"]["discord"][index] = channel_discord
                             else:
@@ -117,7 +117,7 @@ class UpdateHandler:
 
                         if channel_guilded:
                             if channel_guilded in endpoint_data["config"]["channels"]["guilded"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["channels"]["guilded"][index] = channel_guilded
                             else:
@@ -125,7 +125,7 @@ class UpdateHandler:
 
                         if channel_revolt:
                             if channel_revolt in endpoint_data["config"]["channels"]["revolt"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["channels"]["revolt"][index] = channel_revolt
                             else:
@@ -133,7 +133,7 @@ class UpdateHandler:
                         
                         if channel_nerimity:
                             if channel_nerimity in endpoint_data["config"]["channels"]["nerimity"]:
-                                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This channel already exists."})
+                                pass
                             elif index is not None:
                                 endpoint_data["config"]["channels"]["nerimity"][index] = channel_nerimity
                             else:

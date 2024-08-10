@@ -112,6 +112,41 @@ class SurrealDBHandler:
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+    
+    class CreateIncidentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class GetIncidentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class UpdateIncidentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class DeleteIncidentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class ListIncidentsError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+    class GetStatusError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class UpdateStatusError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
 
 
 class ReadHandlerError:

@@ -258,7 +258,7 @@ class Client(commands.CommandsClient):
             await ctx.reply(":x: - Your endpoint could not be found.")
 
 
-    async def (self, ctx):
+    async def add_bridge(self, ctx):
         endpoint = get_endpoint(ctx.server)
         if endpoint:
             requests.post(

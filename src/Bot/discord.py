@@ -28,18 +28,33 @@ logger.addHandler(handler)
 
 # Set up intents and create the bot client
 intents = nextcord.Intents.all()
-client = commands.Bot(command_prefix="gc!", intents=intents)
+client = commands.Bot(command_prefix="a!", intents=intents)
 
 # Create an aiohttp session
 session = aiohttp.ClientSession()
+
+async def send_iamup():
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"https://status.astroid.cc/monitor/iamup/discord") as r:
+            if r.status == 200:
+                print("Sent up status.")
+            else:
+                print("Could not send up status.")
+
+
+async def iamup_loop():
+    while True:
+        asyncio.create_task(send_iamup())
+        await asyncio.sleep(40)
 
 @client.event
 async def on_ready():
     await client.sync_all_application_commands()
     print(f"Logged in as {client.user} ({client.user.id})")
+    await client.loop.create_task(iamup_loop())
     #while True:
     #    async with aiohttp.ClientSession() as session:
-    #        async with session.post(f"https://astroid.deutscher775.de/monitor/iamup/discord") as r:
+    #        async with session.post(f"https://status.astroid.cc//monitor/iamup/discord") as r:
     #            if r.status == 200:
     #                print("Sent up status.")
     #            else:
@@ -58,45 +73,22 @@ async def send_embed(interaction: nextcord.Interaction):
     await interaction.channel.send("Test Message", embed=embed)
     await interaction.response.send_message("Embed sent successfully.")
 
-# Event handler for message deletion
-@client.event
-async def on_message_delete(message: nextcord.Message):
-    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as isbeta:
-        isbeta = await isbeta.json()
-        if isbeta.get("config").get("isbeta"):
-            return
-    # Get channel information from the API
-    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as channel_request:
-        channel_json = await channel_request.json()
-    if message.channel.id in channel_json["config"]["channels"]["discord"]:
-        # Create an embed with deleted message information
-        embed = nextcord.Embed(title=f"{message.author.name} - Deleted", description=message.content, colour=0xf5c400)
-        embed.add_field(name="Created at", value=f'{datetime.datetime.strftime(message.created_at, "%Y-%m-%d %H:%M:%S")} UTC')
-        # Send the embed to the log channel
-        async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as log_request:
-            log_json = await log_request.json()
-        await client.get_channel(log_json["config"]["logs"]["discord"]).send(embed=embed)
-
 # Event handler for message edit
 @client.event
 async def on_message_edit(before: nextcord.Message, after: nextcord.Message):
-    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as isbeta:
-        isbeta = await isbeta.json()
-        if isbeta.get("config").get("isbeta"):
-            return
     # Get channel information from the API
     async with session.get(f"https://astroid.deutscher775.de/{before.guild.id}?token={config.MASTER_TOKEN}") as channel_request:
         channel_json = await channel_request.json()
-    if before.channel.id in channel_json["config"]["channels"]["discord"]:
-        # Create an embed with edited message information
-        embed = nextcord.Embed(title=f"{before.author.name} - Edited", description=after.content, colour=0xf5c400)
-        embed.add_field(name="Jump", value=after.jump_url)
-        embed.add_field(name="Before", value=before.content, inline=False)
-        embed.add_field(name="After", value=after.content, inline=False)
-        # Send the embed to the log channel
-        async with session.get(f"https://astroid.deutscher775.de/{before.guild.id}?token={config.MASTER_TOKEN}") as log_request:
-            log_json = await log_request.json()
-        await client.get_channel(log_json["config"]["logs"]["discord"]).send(embed=embed)
+        if str(before.channel.id) in channel_json["config"]["channels"]["discord"]:
+            # Create an embed with edited message information
+            embed = nextcord.Embed(title=f"{before.author.name} - Edited", description=after.content, colour=0xf5c400)
+            embed.add_field(name="Jump", value=after.jump_url)
+            embed.add_field(name="Before", value=before.content, inline=False)
+            embed.add_field(name="After", value=after.content, inline=False)
+            # Send the embed to the log channel
+            async with session.get(f"https://astroid.deutscher775.de/{before.guild.id}?token={config.MASTER_TOKEN}") as log_request:
+                log_json = await log_request.json()
+            await client.get_channel(int(log_json["config"]["logs"]["discord"])).send(embed=embed)
 
 
 # Event handler for new messages
@@ -175,16 +167,26 @@ async def on_message(message: nextcord.Message):
         pass
 
 
-# Slash command to activate beta mode
-@client.slash_command(name="activate_beta", description="Activate beta mode")
-async def activate_beta(interaction: nextcord.Interaction):
-    await interaction.response.send_message("Activating beta mode..", ephemeral=True)
-    # Update the beta status in the API
-    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.guild.id}?token={config.MASTER_TOKEN}&beta=true") as r:
-        if r.ok:
-            await interaction.edit_original_message(content="Activated beta mode.")
-        else:
-            await interaction.edit_original_message(content=r.json().get("message"))
+# Event handler for message deletion
+@client.event
+async def on_message_delete(message: nextcord.Message):
+    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as isbeta:
+        isbeta = await isbeta.json()
+        if isbeta.get("config").get("isbeta"):
+            return
+    # Get channel information from the API
+    async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as channel_request:
+        channel_json = await channel_request.json()
+        if str(message.channel.id) in channel_json["config"]["channels"]["discord"]:
+            # Create an embed with deleted message information
+            embed = nextcord.Embed(title=f"{message.author.name} - Deleted", description=message.content, colour=0xf5c400)
+            embed.add_field(name="Created at", value=f'{datetime.datetime.strftime(message.created_at, "%Y-%m-%d %H:%M:%S")} UTC')
+            # Send the embed to the log channel
+            async with session.get(f"https://astroid.deutscher775.de/{message.guild.id}?token={config.MASTER_TOKEN}") as log_request:
+                log_json = await log_request.json()
+            await client.get_channel(int(log_json["config"]["logs"]["discord"])).send(embed=embed)
+
+
 
 # Slash command to register the server
 @client.slash_command(name="register", default_member_permissions=8, description="Automatically register your server.")
@@ -210,14 +212,14 @@ async def register(interaction: nextcord.Interaction):
             else:    
                 await interaction.edit_original_message(content=r2.json().get("message"))
         if token_request.ok:
-            await interaction.edit_original_message(content=f"Created enpoint: https://astroid.deutscher775.de/{interaction.guild.id}\nYour API Token is: `{token}`\nSave this and **__do not__** share this!\nHop over to Guilded and run this command in the channel, you want do bridge over:`gc!register {interaction.guild.id}`")
+            await interaction.edit_original_message(content=f"Created enpoint: https://astroid.deutscher775.de/{interaction.guild.id}\nYour API Token is: `{token}`\nSave and **__do not__** share this!\nHop over to Guilded and run this command in the channel, you want do bridge over:`a!register {interaction.guild.id}`")
         else:
             await interaction.edit_original_message(content=token_data.get("message"))    
     except:
         traceback.print_exc()
 
 # Slash command to add another channel for bridging
-@client.slash_command(name="add-bridge", description="Add another channel for bridging")
+@client.slash_command(name="add-bridge", description="Add another channel for bridging", default_member_permissions=8)
 async def add_bridge(interaction: nextcord.Interaction):
     await interaction.response.send_message("Adding bridge..", ephemeral=True)
     # Create a webhook for astroid
@@ -225,7 +227,7 @@ async def add_bridge(interaction: nextcord.Interaction):
     # Update values in the API
     async with session.post(f"https://astroid.deutscher775.de/update/{interaction.channel.guild.id}?channel_discord={interaction.channel_id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r:
         if r.ok:
-            await interaction.edit_original_message(content=f"Added new channel. Execute `gc!add-bridge {interaction.guild.id}` on the other side/s.")
+            await interaction.edit_original_message(content=f"Added new channel. Execute `a!add-bridge {interaction.guild.id}` on the other side/s.")
         else:
             await interaction.edit_original_message(content=r.json().get("message"))
 
@@ -311,19 +313,9 @@ async def gen(interaction: nextcord.Interaction):
     async with session.post(f"https://astroid.deutscher775.de/token/{interaction.guild.id}?master_token={config.MASTER_TOKEN}") as token_gen:
         token = await token_gen.json()
     if token_gen.ok:
-        await interaction.edit_original_message(content=f"Your new API Token is: `{token['token']}`\nSave this and **__do not__** share this!")
+        await interaction.edit_original_message(content=f"Your new API Token is: `{token['token']}`\nSave and **__do not__** share this!")
     else:
         await interaction.edit_original_message(content=token_gen.get("message"))
-
-@client.slash_command(name="remove-bridge", description="Remove a bridge")
-async def remove_bridge(interaction: nextcord.Interaction):
-    await interaction.response.send_message("Removing bridge..", ephemeral=True)
-    # Update the channel in the API
-    async with session.post(f"https://astroid.deutscher775.de/update/{interaction.guild.id}?channel_discord={interaction.channel_id}&token={config.MASTER_TOKEN}") as r:
-        if r.ok:    
-            await interaction.edit_original_message(content="Removed bridge.")
-        else:    
-            await interaction.edit_original_message(content=r.json().get("message"))
 
 # Run the bot
 client.run(config.DISCORD_TOKEN, reconnect=True)

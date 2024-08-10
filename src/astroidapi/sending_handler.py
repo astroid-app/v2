@@ -6,6 +6,7 @@ from Bot import config
 import astroidapi.errors as errors
 import astroidapi.surrealdb_handler as surrealdb_handler
 import astroidapi.read_handler as read_handler
+import astroidapi.formatter as formatter
 
 
 class SendingHandler():
@@ -93,7 +94,7 @@ class SendingHandler():
                     raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
                 async with aiohttp.ClientSession() as session:
                     webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
-                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=updated_json["meta"]["message"]["author"]["name"])
+                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]))
                     await session.close()
                 asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "discord"))
                 print("Sent to discord")
@@ -121,7 +122,7 @@ class SendingHandler():
                     raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
                 async with aiohttp.ClientSession() as session:
                     webhook_obj = guilded.Webhook.from_url(webhook, session=session)
-                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=updated_json["meta"]["message"]["author"]["name"])
+                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]))
                     await session.close()
                 asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "guilded"))
                 print("Sent to guilded")
