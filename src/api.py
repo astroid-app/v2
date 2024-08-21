@@ -88,7 +88,7 @@ def view_logs(token: Annotated[str, fastapi.Query(max_length=85, min_length=10)]
 
 @api.get("/ga-test")
 def ga_test():
-    return fastapi.responses.JSONResponse(status_code=200, content={"commited": "210824-11"})
+    return fastapi.responses.JSONResponse(status_code=200, content={"commited": "210824-15"})
 
 @api.get("/assets/{asset}", description="Get an asset.")
 def get_asset(asset: str, width: int = None, height: int = None):
