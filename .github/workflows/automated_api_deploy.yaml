@@ -26,13 +26,11 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /root/guildcord
-            git fetch origin main
-            git merge origin/main
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy the API
+            cd /root/astroid
+            git pull origin main
+            mv src/api.py /root/guildcord/src/api.py
+
+      - name: Deploy API
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
