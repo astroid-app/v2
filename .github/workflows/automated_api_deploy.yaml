@@ -32,9 +32,10 @@ jobs:
           script: |
             cd /root/astroid
             git pull origin main
-            mv src/api.py /root/guildcord/src/api.py
+            cp -r /root/astroid/src/astroidapi /root/guildcord/astroidapi
+            cp -r /root/astroid/src/api.py /root/guildcord/api.py
   
-  deply_api:
+  deploy_api:
     runs-on: ubuntu-latest
     needs: [stop_api, update_api]
     steps:
