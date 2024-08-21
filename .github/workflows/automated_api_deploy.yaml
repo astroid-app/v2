@@ -7,7 +7,6 @@ on:
 jobs:
   pull_changes:
     runs-on: ubuntu-latest
-    file-depth: 1
     steps:
       - name: API Shutdown
         uses: appleboy/ssh-action@master
@@ -28,7 +27,8 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd /root/astroid
-            git pull origin main
+            git fetch origin main
+            git merge origin/main
   deploy:
     runs-on: ubuntu-latest
     steps:
