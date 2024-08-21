@@ -7,6 +7,7 @@ on:
 jobs:
   pull_changes:
     runs-on: ubuntu-latest
+    file-depth: 1
     steps:
       - name: API Shutdown
         uses: appleboy/ssh-action@master
@@ -26,7 +27,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /root/guildcord
+            cd /root/astroid
             git pull origin main
   deploy:
     runs-on: ubuntu-latest
