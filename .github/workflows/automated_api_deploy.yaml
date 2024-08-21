@@ -26,7 +26,7 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /root/astroid
+            cd /root/guildcord
             git pull origin main
   deploy:
     runs-on: ubuntu-latest
