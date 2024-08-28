@@ -205,7 +205,7 @@ class UpdateHandler:
                                         else:
                                             endpoint_data["meta"]["message"]["attachments"].append(val)
                             else:
-                                endpoint_data["meta"]["message"]["attachments"] = []
+                                endpoint_data["meta"]["message"]["attachments"] = [message_attachments]
 
                         if message_embed:
                             embed_object = json.loads(message_embed.replace("'", '"'))

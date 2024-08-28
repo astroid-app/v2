@@ -184,3 +184,29 @@ class HealtCheckError:
             def __init__(self, message):
                 self.message = message
                 super().__init__(self.message)
+
+class AttachmentProcessError:
+    class AttachmentDownloadError:
+        class AttachmentNotFound(Exception):
+            def __init__(self, message):
+                self.message = message
+                super().__init__(self.message)
+
+        class AttachmentDownloadError(Exception):
+            def __init__(self, message):
+                self.message = message
+                super().__init__(self.message)
+
+        class AttachmentTooLarge(Exception):
+            def __init__(self, message):
+                self.message = message
+                super().__init__(self.message)
+
+    class AttachmentClearError:
+        class DeletionError(Exception):
+            def __init__(self, message):
+                self.message = message
+                super().__init__(self.message)
+    
+    
+    

@@ -7,6 +7,8 @@ import astroidapi.errors as errors
 import astroidapi.surrealdb_handler as surrealdb_handler
 import astroidapi.read_handler as read_handler
 import astroidapi.formatter as formatter
+import astroidapi.attachment_processor as attachment_processor
+import os
 
 
 class SendingHandler():
@@ -18,69 +20,76 @@ class SendingHandler():
         try:
             sender = updated_json["meta"]["sender"]
 
+            if len(updated_json["meta"]["message"]["attachments"]) > 0:
+                attachments = []
+                for attachment in updated_json["meta"]["message"]["attachments"]:
+                    file = await attachment_processor.download_attachment(attachment)
+                    attachments.append(file)
+            else:
+                attachments = None
+
             if sender == "guilded":
-                await cls.send_from_guilded(updated_json, endpoint)
+                await cls.send_from_guilded(updated_json, endpoint, attachments)
             if sender == "discord":
-                await cls.send_from_discord(updated_json, endpoint)
+                await cls.send_from_discord(updated_json, endpoint, attachments)
             if sender == "revolt":
-                await cls.send_from_revolt(updated_json, endpoint)
+                await cls.send_from_revolt(updated_json, endpoint, attachments)
             if sender == "nerimity":
-                await cls.send_from_nerimity(updated_json, endpoint)
+                await cls.send_from_nerimity(updated_json, endpoint, attachments)
             return True
         except Exception as e:
             raise errors.SendingError.DistributionError(e)
         
 
-
     @classmethod
-    async def send_from_discord(cls, updated_json, endpoint):
+    async def send_from_discord(cls, updated_json, endpoint, attachments: list = None):
         try:
-            asyncio.create_task(cls.send_to_revolt(updated_json, endpoint))
-            asyncio.create_task(cls.send_to_guilded(updated_json, endpoint))
+            asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
+            asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
         except Exception as e:
             raise errors.SendingError.SendFromDiscordError(e)
 
 
     @classmethod
-    async def send_from_nerimity(cls, updated_json, endpoint):
+    async def send_from_nerimity(cls, updated_json, endpoint, attachments: list = None):
         try:
-            asyncio.create_task(cls.send_to_discord(updated_json, endpoint))
+            asyncio.create_task(cls.send_to_discord(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_guilded(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_revolt(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
             return True
         except Exception as e:
             raise errors.SendingError.SendFromNerimiryError(e)
 
     @classmethod
-    async def send_from_revolt(cls, updated_json, endpoint):
+    async def send_from_revolt(cls, updated_json, endpoint, attachments: list = None):
         try:
-            asyncio.create_task(cls.send_to_discord(updated_json, endpoint))
+            asyncio.create_task(cls.send_to_discord(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_guilded(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
             return True
         except Exception as e:
             raise errors.SendingError.SendFromRevoltError(e)
     
     @classmethod
-    async def send_from_guilded(cls, updated_json, endpoint):
+    async def send_from_guilded(cls, updated_json, endpoint, attachments: list = None):
         try:
-            asyncio.create_task(cls.send_to_discord(updated_json, endpoint))
+            asyncio.create_task(cls.send_to_discord(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_revolt(updated_json, endpoint))
+                asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
             return True
         except Exception as e:
             raise errors.SendingError.SendFromGuildedError(e)
 
     @classmethod
-    async def send_to_discord(cls, updated_json, endpoint):
+    async def send_to_discord(cls, updated_json, endpoint, attachments: list = None):
         try:
             read_discord = await read_handler.ReadHandler.check_read(endpoint, "discord")
             if read_discord is False:
@@ -92,9 +101,13 @@ class SendingHandler():
                     webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
                 else:
                     raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                nextcord_files = []
+                if attachments is not None:
+                    for attachment in attachments:
+                        nextcord_files.append(nextcord.File(attachment.name, filename=attachment.name.split("/")[-1]))
                 async with aiohttp.ClientSession() as session:
                     webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
-                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]))
+                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
                     await session.close()
                 asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "discord"))
                 print("Sent to discord")
@@ -108,7 +121,7 @@ class SendingHandler():
 
 
     @classmethod
-    async def send_to_guilded(cls, updated_json, endpoint):
+    async def send_to_guilded(cls, updated_json, endpoint, attachments: list = None):
         try:
             read_guilded = await read_handler.ReadHandler.check_read(endpoint, "guilded")
             if read_guilded is False:
@@ -120,11 +133,15 @@ class SendingHandler():
                     webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
                 else:
                     raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                guilded_files = []
+                if attachments is not None:
+                    for attachment in attachments:
+                        guilded_files.append(guilded.File(attachment.name, filename=attachment.name.split("/")[-1]))
                 async with aiohttp.ClientSession() as session:
+                    asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "guilded"))
                     webhook_obj = guilded.Webhook.from_url(webhook, session=session)
-                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]))
+                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
                     await session.close()
-                asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "guilded"))
                 print("Sent to guilded")
                 return True
             else:
@@ -136,7 +153,7 @@ class SendingHandler():
         
 
     @classmethod
-    async def send_to_nerimity(cls, updated_json, endpoint):
+    async def send_to_nerimity(cls, updated_json, endpoint, attachments: list = None):
         try:
             read_nerimity = await read_handler.ReadHandler.check_read(endpoint, "nerimity")
             if read_nerimity is False and updated_json["config"]["isbeta"] is True:
@@ -173,7 +190,7 @@ class SendingHandler():
         
     
     @classmethod
-    async def send_to_revolt(cls, updated_json, endpoint):
+    async def send_to_revolt(cls, updated_json, endpoint, attachments: list = None):
         return True
         #if updated_json["meta"]["read"]["revolt"] is False:
         #    if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
