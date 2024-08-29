@@ -36,6 +36,7 @@ class SendingHandler():
                 await cls.send_from_revolt(updated_json, endpoint, attachments)
             if sender == "nerimity":
                 await cls.send_from_nerimity(updated_json, endpoint, attachments)
+            await attachment_processor.clear_temporary_attachments()
             return True
         except Exception as e:
             raise errors.SendingError.DistributionError(e)
@@ -104,11 +105,15 @@ class SendingHandler():
                 nextcord_files = []
                 if attachments is not None:
                     for attachment in attachments:
-                        nextcord_files.append(nextcord.File(attachment.name, filename=attachment.name.split("/")[-1]))
+                        file = nextcord.File(attachment.name, filename=attachment.name.split("/")[-1])
+                        nextcord_files.append(file)
+                        await surrealdb_handler.AttachmentProcessor.update_attachment(attachment.name.split("/")[-1].split(".")[0], sentby="discord")
                 async with aiohttp.ClientSession() as session:
                     webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
                     await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
                     await session.close()
+                    for file in nextcord_files:
+                        file.close()
                 asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "discord"))
                 print("Sent to discord")
                 return True
@@ -136,11 +141,18 @@ class SendingHandler():
                 guilded_files = []
                 if attachments is not None:
                     for attachment in attachments:
-                        guilded_files.append(guilded.File(attachment.name, filename=attachment.name.split("/")[-1]))
+                        file = guilded.File(attachment.name, filename=attachment.name.split("/")[-1])
+                        guilded_files.append(file)
+                        await surrealdb_handler.AttachmentProcessor.update_attachment(attachment.name.split("/")[-1].split(".")[0], sentby="guilded")
                 async with aiohttp.ClientSession() as session:
                     asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "guilded"))
                     webhook_obj = guilded.Webhook.from_url(webhook, session=session)
-                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
+                    try:
+                        await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
+                    except AttributeError:
+                        pass
+                    for file in guilded_files:
+                        file.close()
                     await session.close()
                 print("Sent to guilded")
                 return True
@@ -175,11 +187,13 @@ class SendingHandler():
                         "Authorization": f"{config.NERIMITY_TOKEN}",
                     }
                     print(channel_id)
-                    body = {
-                        "content": f"**{message_author_name}**: {message_content}"
-                    }
-                    await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=body)
+                    formdata = aiohttp.FormData()
+                    formdata.add_field("content", f"**{message_author_name}**: {message_content}")
+                    formdata.add_field("attachment", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
+                    r = await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=formdata)
+                    print(f"Sent to nerimity. Response: {r.status}, {r.reason} {await r.text()}")
                     await session.close()
+                    await surrealdb_handler.AttachmentProcessor.update_attachment(attachments[0].name.split("/")[-1].split(".")[0], sentby="nerimity")
                     asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "nerimity"))
                     print("Sent to nerimity")
                     return True
