@@ -156,6 +156,19 @@ def discord():
         url="https://discord.gg/DbrFADj6Xw"
     )
 
+@api.get("/cdn/{assetId}", description="Get an asset from the CDN.")
+async def get_cdn_asset(assetId: str):
+    asset = await astroidapi.surrealdb_handler.AttachmentProcessor.get_attachment(assetId)
+    try:
+        if asset:
+            return fastapi.responses.FileResponse(f"{pathlib.Path(__file__).parent.resolve()}/astroidapi/TMP_attachments/{assetId}.{asset['type']}")
+        else:
+            return fastapi.responses.JSONResponse(status_code=404, content={"message": "This asset does not exist."})
+    except FileNotFoundError:
+        return fastapi.responses.JSONResponse(status_code=404, content={"message": "This asset does not exist."})
+    except Exception as e:
+        return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+
 @api.get("/docs/props", description="Get the properties of the API.")
 def props():
     return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/props.json", "r"))

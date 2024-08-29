@@ -147,6 +147,26 @@ class SurrealDBHandler:
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+    
+    class CreateAttachmentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+    class UpdateAttachmentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class DeleteAttachmentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class GetAttachmentError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
 
 
 class ReadHandlerError:

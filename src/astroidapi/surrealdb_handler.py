@@ -129,6 +129,60 @@ async def mark_read(endpoint, platform):
         raise errors.ReadHandlerError.MarkReadError(e)
 
 
+class AttachmentProcessor:
+
+    @classmethod
+    async def create_attachment(cls, attachment_id: str, status: str, type: str):
+        if status and status not in ["downloading", "downloaded", "sent", "canDelete"]:
+            raise errors.SurrealDBHandler.CreateAttachmentError(f"Invalid status: {status}")
+        if type and type not in ["jpeg", "jpg", "mp4", "png", "gif", "webp"]:
+            raise errors.SurrealDBHandler.CreateAttachmentError(f"Invalid type: {type}")
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                await db.create(f"attachments:`{attachment_id}`", {"status": status, "type": type, "sentBy": {"discord": False, "guilded": False, "revolt": True, "nerimity": True}})
+                return await db.select(f"attachments:`{attachment_id}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.CreateAttachmentError(e)
+
+    @classmethod
+    async def update_attachment(cls, attachment_id: str, status: str = None, sentby: str = None):
+        if status and status not in ["downloading", "downloaded", "sent", "canDelete"]:
+            raise errors.SurrealDBHandler.UpdateAttachmentError(f"Invalid status: {status}")
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                if sentby:
+                    await db.query(f"UPDATE attachments:`{attachment_id}` SET sentBy.{sentby} = true")
+                if status:
+                    await db.query(f"UPDATE attachments:`{attachment_id}` SET status = '{status}'")
+                return await db.select(f"attachments:`{attachment_id}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.UpdateAttachmentError(e)
+    
+    @classmethod
+    async def delete_attachment(cls, attachment_id: str):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                await db.delete(f"attachments:`{attachment_id}`")
+                return True
+        except Exception as e:
+            raise errors.SurrealDBHandler.DeleteAttachmentError(e)
+    
+    @classmethod
+    async def get_attachment(cls, attachment_id: str):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                return await db.select(f"attachments:`{attachment_id}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.GetAttachmentError(e)
+
 class GetEndpoint:
 
     @classmethod
