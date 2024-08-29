@@ -22,11 +22,14 @@ class SendingHandler():
 
             registered_platforms = [platform for platform in updated_json["config"]["channels"] if len(updated_json["config"]["channels"][platform]) > 0]
 
-            if len(updated_json["meta"]["message"]["attachments"]) > 0:
-                attachments = []
-                for attachment in updated_json["meta"]["message"]["attachments"]:
-                    file = await attachment_processor.download_attachment(attachment, registered_platforms)
-                    attachments.append(file)
+            if updated_json["meta"]["message"]["author"]["id"] == "-11111":
+                if len(updated_json["meta"]["message"]["attachments"]) > 0:
+                    attachments = []
+                    for attachment in updated_json["meta"]["message"]["attachments"]:
+                        file = await attachment_processor.download_attachment(attachment, registered_platforms)
+                        attachments.append(file)
+                else:
+                    attachments = None
             else:
                 attachments = None
 
@@ -191,11 +194,13 @@ class SendingHandler():
                     print(channel_id)
                     formdata = aiohttp.FormData()
                     formdata.add_field("content", f"**{message_author_name}**: {message_content}")
-                    formdata.add_field("attachment", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
+                    if attachments is not None:
+                        formdata.add_field("attachment", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
                     r = await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=formdata)
                     print(f"Sent to nerimity. Response: {r.status}, {r.reason} {await r.text()}")
                     await session.close()
-                    await surrealdb_handler.AttachmentProcessor.update_attachment(attachments[0].name.split("/")[-1].split(".")[0], sentby="nerimity")
+                    if attachments is not None:
+                        await surrealdb_handler.AttachmentProcessor.update_attachment(attachments[0].name.split("/")[-1].split(".")[0], sentby="nerimity")
                     asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "nerimity"))
                     print("Sent to nerimity")
                     return True
