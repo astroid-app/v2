@@ -6,7 +6,7 @@ import random
 import pathlib
 import string
 
-async def download_attachment(attachment_url):
+async def download_attachment(attachment_url, registeredPlatforms):
     try:
         response = requests.get(attachment_url)
         if response.status_code == 200:
@@ -17,7 +17,7 @@ async def download_attachment(attachment_url):
             attachment_id = "".join(random.choices(id_chars, k=16))
             attachment_name = attachment_url.split('/')[-1]
             attachment_type = attachment_name.split('.')[-1]
-            await surrealdb_handler.AttachmentProcessor.create_attachment(attachment_id, status="downloading", type=attachment_type)
+            await surrealdb_handler.AttachmentProcessor.create_attachment(attachment_id, status="downloading", type=attachment_type, registeredPlatforms=registeredPlatforms)
             attachment = response.content
             attachment_path = f"{pathlib.Path(__file__).parent.resolve()}/TMP_attachments/{attachment_id}.{attachment_type}"
             with open(attachment_path, 'wb') as file:

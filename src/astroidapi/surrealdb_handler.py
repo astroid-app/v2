@@ -132,7 +132,7 @@ async def mark_read(endpoint, platform):
 class AttachmentProcessor:
 
     @classmethod
-    async def create_attachment(cls, attachment_id: str, status: str, type: str):
+    async def create_attachment(cls, attachment_id: str, status: str, type: str, registeredPlatforms: list):
         if status and status not in ["downloading", "downloaded", "sent", "canDelete"]:
             raise errors.SurrealDBHandler.CreateAttachmentError(f"Invalid status: {status}")
         if type and type not in ["jpeg", "jpg", "mp4", "png", "gif", "webp"]:
@@ -141,7 +141,12 @@ class AttachmentProcessor:
             async with Surreal(config.SDB_URL) as db:
                 await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
                 await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
-                await db.create(f"attachments:`{attachment_id}`", {"status": status, "type": type, "sentBy": {"discord": False, "guilded": False, "revolt": True, "nerimity": True}})
+                await db.create(f"attachments:`{attachment_id}`", {"status": status, "type": type, "sentBy": {"discord": True, "guilded": True, "revolt": True, "nerimity": True}})
+                for platform in registeredPlatforms:
+                    if platform == "revolt":
+                        await db.query(f"UPDATE attachments:`{attachment_id}` SET sentBy.revolt = true")
+                        continue
+                    await db.query(f"UPDATE attachments:`{attachment_id}` SET sentBy.{platform} = false")
                 return await db.select(f"attachments:`{attachment_id}`")
         except Exception as e:
             raise errors.SurrealDBHandler.CreateAttachmentError(e)
