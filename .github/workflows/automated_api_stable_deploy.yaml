@@ -16,10 +16,24 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             sudo systemctl stop astroidapi
+  backup_api:
+    runs-on: ubuntu-latest
+    needs: stop_api
+    steps:
+      - name: Backup API image
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cp -r /root/guildcord/src/astroidapi /root/backup/guildcord/src/astroidapi
+            cp -r /root/guildcord/src/api.py /root/backup/guildcord/src/api.py
 
   update_api:
     runs-on: ubuntu-latest
-    needs: stop_api
+    needs: [stop_api, backup_api]
     steps:
       - name: Pull changes
         uses: appleboy/ssh-action@master
@@ -31,12 +45,12 @@ jobs:
           script: |
             cd /root/astroid
             git pull origin main
-            cp -r /root/astroid/src/astroidapi /root/guildcord/astroidapi
-            cp -r /root/astroid/src/api.py /root/guildcord/api.py
+            cp -r /root/astroid/src/astroidapi /root/guildcord/src/astroidapi
+            cp -r /root/astroid/src/api.py /root/guildcord/src/api.py
   
   deploy_api:
     runs-on: ubuntu-latest
-    needs: [stop_api, update_api]
+    needs: [stop_api, backup_api, update_api]
     steps:
       - name: Deploy API
         uses: appleboy/ssh-action@master
