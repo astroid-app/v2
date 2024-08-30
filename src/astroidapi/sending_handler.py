@@ -9,6 +9,7 @@ import astroidapi.read_handler as read_handler
 import astroidapi.formatter as formatter
 import astroidapi.attachment_processor as attachment_processor
 import os
+import traceback
 
 
 class SendingHandler():
@@ -22,6 +23,7 @@ class SendingHandler():
 
             registered_platforms = [platform for platform in updated_json["config"]["channels"] if len(updated_json["config"]["channels"][platform]) > 0]
 
+            print("Author ID: " + updated_json["meta"]["message"]["author"]["id"])
             if updated_json["meta"]["message"]["author"]["id"] == "-11111":
                 if len(updated_json["meta"]["message"]["attachments"]) > 0:
                     attachments = []
@@ -44,6 +46,7 @@ class SendingHandler():
             await attachment_processor.clear_temporary_attachments()
             return True
         except Exception as e:
+            traceback.print_exc()
             raise errors.SendingError.DistributionError(e)
         
 

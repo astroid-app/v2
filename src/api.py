@@ -373,6 +373,7 @@ async def post_endpoint(
         beta=beta,
         only_check=only_check,
     )
+    return astroidapi.surrealdb_handler.get_endpoint(endpoint)
 
 
 @api.patch("/sync", description="Sync the local files with the database.")
