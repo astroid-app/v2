@@ -45,7 +45,7 @@ jobs:
           script: |
             cd /root/astroid
             git pull origin main
-            cp -r /root/astroid/src/astroidapi /root/guildcord/src/astroidapi
+            cp -r /root/astroid/src/astroidapi /root/guildcord/src
             cp -r /root/astroid/src/api.py /root/guildcord/src/api.py
   
   deploy_api:
