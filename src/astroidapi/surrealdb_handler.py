@@ -169,6 +169,8 @@ class AttachmentProcessor:
     
     @classmethod
     async def delete_attachment(cls, attachment_id: str):
+        if attachment_id == "eligible_endpoints":
+            raise errors.SurrealDBHandler.DeleteAttachmentError("Cannot delete eligible_endpoints")
         try:
             async with Surreal(config.SDB_URL) as db:
                 await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
@@ -187,6 +189,19 @@ class AttachmentProcessor:
                 return await db.select(f"attachments:`{attachment_id}`")
         except Exception as e:
             raise errors.SurrealDBHandler.GetAttachmentError(e)
+    
+    @classmethod
+    async def check_eligibility(cls, endpoint: int):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                elegible_endpoints = await db.select("attachments:eligible_endpoints")
+                if endpoint in elegible_endpoints["endpoints"]:
+                    return True
+
+        except Exception as e:
+            raise errors.SurrealDBHandler.CheckEligibilityError(e)
 
 class GetEndpoint:
 

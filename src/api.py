@@ -315,7 +315,7 @@ async def clear_temporary_attachments(master_token: Annotated[str, fastapi.Query
     if master_token == Bot.config.MASTER_TOKEN:
         try:
             total_files = len(os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/astroidapi/TMP_attachments")) - 1
-            astroidapi.attachment_processor.force_clear_temporary_attachments()
+            await astroidapi.attachment_processor.force_clear_temporary_attachments()
             requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - TMP Attachments] Deleted {total_files} temporary attachments."})
             return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
         except Exception as e:

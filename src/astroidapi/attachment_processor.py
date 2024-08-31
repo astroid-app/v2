@@ -7,7 +7,7 @@ import pathlib
 import string
 
 async def download_attachment(attachment_url, registeredPlatforms):
-    try:
+    try: 
         response = requests.get(attachment_url)
         if response.status_code == 200:
             if int(response.headers["content-length"]) > 50 * 1024 * 1024: # value in B -> KB -> MB
@@ -68,12 +68,13 @@ def clear_temporary_attachment(attachment_path):
     except Exception as e:
         raise errors.AttachmentProcessError.AttachmentClearError.DeletionError(f"Error deleting temporary attachment. Error: {e}")
     
-def force_clear_temporary_attachments():
+async def force_clear_temporary_attachments():
     try:
         path = f"{pathlib.Path(__file__).parent.resolve()}/TMP_attachments"
         for file in pathlib.Path(path).iterdir():
             if file.name == ".placeholder":
                 continue
+            await surrealdb_handler.AttachmentProcessor.delete_attachment(file.name.split('.')[0])
             file.unlink()
     except Exception as e:
         raise errors.AttachmentProcessError.AttachmentClearError.DeletionError(f"Error deleting temporary attachments. Error: {e}")

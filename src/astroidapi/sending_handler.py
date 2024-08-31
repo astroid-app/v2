@@ -23,8 +23,10 @@ class SendingHandler():
 
             registered_platforms = [platform for platform in updated_json["config"]["channels"] if len(updated_json["config"]["channels"][platform]) > 0]
 
-            print("Author ID: " + updated_json["meta"]["message"]["author"]["id"])
-            if updated_json["meta"]["message"]["author"]["id"] == "-11111":
+            is_eligible = await surrealdb_handler.AttachmentProcessor.check_eligibility(endpoint)
+            
+            print(f"Is eligible: {is_eligible}")
+            if is_eligible is True:
                 if len(updated_json["meta"]["message"]["attachments"]) > 0:
                     attachments = []
                     for attachment in updated_json["meta"]["message"]["attachments"]:
