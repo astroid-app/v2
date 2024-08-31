@@ -10,6 +10,7 @@ import Bot.config
 import fastapi.security
 import secrets
 from typing import Annotated
+import astroidapi.attachment_processor
 import astroidapi.endpoint_update_handler
 import astroidapi.errors
 import astroidapi.get_channel_information
@@ -309,6 +310,20 @@ def new_token(endpoint: int,
     else:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "The provided token is invalid."})
 
+@api.delete("/tempattachments", description="Clear the temporary attachments.")
+async def clear_temporary_attachments(master_token: Annotated[str, fastapi.Query(max_length=85, min_length=85)]):
+    if master_token == Bot.config.MASTER_TOKEN:
+        try:
+            total_files = len(os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/astroidapi/TMP_attachments")) - 1
+            astroidapi.attachment_processor.force_clear_temporary_attachments()
+            requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - TMP Attachments] Deleted {total_files} temporary attachments."})
+            return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
+        except Exception as e:
+            logging.exception(traceback.print_exc())
+            requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - TMP Attachments] An error occurred while deleting temporary attachments:\n\n `{e}`"})
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
 
 @api.post("/update/{endpoint}", description="Modify an endpoint.", response_description="Endpoint with updated data.")
 async def post_endpoint(

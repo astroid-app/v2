@@ -67,3 +67,13 @@ def clear_temporary_attachment(attachment_path):
         pathlib.Path(attachment_path.replace("\\", "/")).unlink()
     except Exception as e:
         raise errors.AttachmentProcessError.AttachmentClearError.DeletionError(f"Error deleting temporary attachment. Error: {e}")
+    
+def force_clear_temporary_attachments():
+    try:
+        path = f"{pathlib.Path(__file__).parent.resolve()}/TMP_attachments"
+        for file in pathlib.Path(path).iterdir():
+            if file.name == ".placeholder":
+                continue
+            file.unlink()
+    except Exception as e:
+        raise errors.AttachmentProcessError.AttachmentClearError.DeletionError(f"Error deleting temporary attachments. Error: {e}")
