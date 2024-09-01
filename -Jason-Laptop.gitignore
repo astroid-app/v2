@@ -1,0 +1,27 @@
+.idea
+.git
+src/Bot/guilded_servers
+src/Bot/revolt.log
+src/Bot/revolt_servers
+src/Bot/config.py
+.github
+LICENSE
+tokens.json
+src/endpoints
+beta
+Copy of endpoints
+src/beta_users.py
+TMP
+__pycache__
+endpoints*
+tokens*
+src/tokens.json
+src/Bot/config.py
+src/Bot/config.py
+src/Bot/discord.py
+src/tokens.json
+src/tokens.json
+/web
+website.zip
+src/tokens.json
+src/tokens.json

@@ -17,6 +17,10 @@ async def download_attachment(attachment_url, registeredPlatforms):
             attachment_id = "".join(random.choices(id_chars, k=16))
             attachment_name = attachment_url.split('/')[-1]
             attachment_type = attachment_name.split('.')[-1]
+            if "?" in attachment_type:
+                attachment_type = attachment_type.split("?")[0]
+            elif "%3F" in attachment_type:
+                attachment_type = attachment_type.split("%3F")[0]
             await surrealdb_handler.AttachmentProcessor.create_attachment(attachment_id, status="downloading", type=attachment_type, registeredPlatforms=registeredPlatforms)
             attachment = response.content
             attachment_path = f"{pathlib.Path(__file__).parent.resolve()}/TMP_attachments/{attachment_id}.{attachment_type}"
