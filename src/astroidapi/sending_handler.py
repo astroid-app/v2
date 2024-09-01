@@ -24,7 +24,7 @@ class SendingHandler():
             registered_platforms = [platform for platform in updated_json["config"]["channels"] if len(updated_json["config"]["channels"][platform]) > 0]
 
             is_eligible = await surrealdb_handler.AttachmentProcessor.check_eligibility(endpoint)
-            
+
             print(f"Is eligible: {is_eligible}")
             if is_eligible is True:
                 if len(updated_json["meta"]["message"]["attachments"]) > 0:
@@ -120,7 +120,10 @@ class SendingHandler():
                         await surrealdb_handler.AttachmentProcessor.update_attachment(attachment.name.split("/")[-1].split(".")[0], sentby="discord")
                 async with aiohttp.ClientSession() as session:
                     webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
-                    await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
+                    message_content = updated_json["meta"]["message"]["content"]
+                    if message_content is None or message_content == "" or message_content == " ":
+                        message_content = "||attachment||"
+                    await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
                     await session.close()
                     for file in nextcord_files:
                         file.close()
@@ -154,11 +157,15 @@ class SendingHandler():
                         file = guilded.File(attachment.name, filename=attachment.name.split("/")[-1])
                         guilded_files.append(file)
                         await surrealdb_handler.AttachmentProcessor.update_attachment(attachment.name.split("/")[-1].split(".")[0], sentby="guilded")
+                
                 async with aiohttp.ClientSession() as session:
                     asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "guilded"))
                     webhook_obj = guilded.Webhook.from_url(webhook, session=session)
                     try:
-                        await webhook_obj.send(content=updated_json["meta"]["message"]["content"], avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
+                        message_content = updated_json["meta"]["message"]["content"]
+                        if message_content is None or message_content == "" or message_content == " ":
+                            message_content = "||attachment||"
+                        await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
                     except AttributeError:
                         pass
                     for file in guilded_files:
