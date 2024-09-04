@@ -122,7 +122,9 @@ class SendingHandler():
                     webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
                     message_content = updated_json["meta"]["message"]["content"]
                     if message_content is None or message_content == "" or message_content == " ":
-                        message_content = "||attachment||"
+                        if updated_json["meta"]["message"]["attachments"] is not None:
+                            if updated_json["meta"]["message"]["attachments"] is not None:
+                                message_content = "‎ "
                     await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
                     await session.close()
                     for file in nextcord_files:
@@ -164,7 +166,8 @@ class SendingHandler():
                     try:
                         message_content = updated_json["meta"]["message"]["content"]
                         if message_content is None or message_content == "" or message_content == " ":
-                            message_content = "||attachment||"
+                            if updated_json["meta"]["message"]["attachments"] is not None:
+                                message_content = "‎ "
                         await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
                     except AttributeError:
                         pass
