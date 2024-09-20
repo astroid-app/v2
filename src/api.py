@@ -449,7 +449,7 @@ async def endpoint_healthcheck(endpoint: int, token: str):
                                                                             "details": "unexpectederror"})
         except astroidapi.errors.SurrealDBHandler.EndpointNotFoundError:
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist.",
-                                                                            "details": "notfound"})W
+                                                                            "details": "notfound"})
         except astroidapi.errors.SurrealDBHandler.GetEndpointError as e:
             traceback.print_exc()
             return fastapi.responses.JSONResponse(status_code=404, content={"message": f"An error occurred: {e}",
