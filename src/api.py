@@ -437,16 +437,23 @@ async def endpoint_healthcheck(endpoint: int, token: str):
         try:
             healty = await astroidapi.health_check.HealthCheck.EndpointCheck.check(endpoint)
             if healty:
-                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This endpoint is healthy."})
-            else:
-                return fastapi.responses.JSONResponse(status_code=500, content={"message": "This endpoint is not healthy."})
+                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This endpoint is healthy.", "details": None})
+        except astroidapi.errors.HealtCheckError.EndpointCheckError.EndpointConfigError as e:
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"There seems to be an error in the endpoint configuration: {e}",
+                                                                            "details": "configerror"})
+        except astroidapi.errors.HealtCheckError.EndpointCheckError.EndpointMetaDataError as e:
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"There seems to be an error in the endpoint meta data: {e}",
+                                                                            "details": "metadataerror"})
         except astroidapi.errors.HealtCheckError.EndpointCheckError as e:
-            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}",
+                                                                            "details": "unexpectederror"})
         except astroidapi.errors.SurrealDBHandler.EndpointNotFoundError:
-            return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist."})
+            return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist.",
+                                                                            "details": "notfound"})W
         except astroidapi.errors.SurrealDBHandler.GetEndpointError as e:
             traceback.print_exc()
-            return fastapi.responses.JSONResponse(status_code=404, content={"message": f"An error occurred: {e}"})
+            return fastapi.responses.JSONResponse(status_code=404, content={"message": f"An error occurred: {e}",
+                                                                            "details": "getendpointerror"})
 
 
 @api.post("/create", description="Create an endpoint.",

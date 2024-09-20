@@ -5,7 +5,6 @@ import json
 
 
 class HealthCheck:
-
     class EndpointCheck:
 
         @classmethod
@@ -60,10 +59,14 @@ class HealthCheck:
                 endpoint_data = await surrealdb_handler.get_endpoint(endpoint)
                 for key in healthy_endpoint_data["config"].keys():
                     if key not in endpoint_data["config"]:
-                        raise errors.HealtCheckError.EndpointCheckError.EndpointConfigError(f"'{key}' not found in endpoint '{endpoint}'")
+                        raise errors.HealtCheckError.EndpointCheckError.EndpointConfigError(f"'{key}' not found in endpoint config '{endpoint}'")
                 for key in healthy_endpoint_data["meta"].keys():
                     if key not in endpoint_data["meta"]:
-                        raise errors.HealtCheckError.EndpointCheckError.EndpointMetaDataError(f"'{key}' not found in endpoint '{endpoint}'")
+                        raise errors.HealtCheckError.EndpointCheckError.EndpointMetaDataError(f"'{key}' not found in endpoint meta data '{endpoint}'")
+                print("Endpoint is healthy")
                 return True
             except IndexError as e:
                 raise errors.HealtCheckError.EndpointCheckError(e)
+
+
+asyncio.run(HealthCheck.EndpointCheck.check(1045437427965231284))
