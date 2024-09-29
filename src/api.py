@@ -138,7 +138,6 @@ def root():
 
 @api.get("/statistics", description="Get the statistics.")
 async def get_statistics():
-    await astroidapi.surrealdb_handler.Statistics.update_messages(1)
     return await astroidapi.statistics.get_statistics()
 
 @api.get("/invite/{platform}", description="Get the invite link for the astroid bot.")
