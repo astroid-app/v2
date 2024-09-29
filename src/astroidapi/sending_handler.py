@@ -8,6 +8,7 @@ import astroidapi.surrealdb_handler as surrealdb_handler
 import astroidapi.read_handler as read_handler
 import astroidapi.formatter as formatter
 import astroidapi.attachment_processor as attachment_processor
+import astroidapi.statistics as statistics
 import os
 import traceback
 
@@ -46,6 +47,7 @@ class SendingHandler():
             if sender == "nerimity":
                 await cls.send_from_nerimity(updated_json, endpoint, attachments)
             await attachment_processor.clear_temporary_attachments()
+            asyncio.create_task(statistics.update_statistics())
             return True
         except Exception as e:
             traceback.print_exc()

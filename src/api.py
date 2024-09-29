@@ -1,9 +1,7 @@
-import asyncio
 import json
 import os
 import pathlib
 import traceback
-import aiohttp
 import uvicorn
 import fastapi
 import Bot.config
@@ -17,13 +15,13 @@ import astroidapi.get_channel_information
 import astroidapi.health_check
 import astroidapi.read_handler
 import astroidapi.surrealdb_handler
+import astroidapi.statistics
 import beta_users
 from fastapi.middleware.cors import CORSMiddleware
 import requests
 import sentry_sdk
 from PIL import Image
 from fastapi import HTTPException
-import time
 import slowapi
 from slowapi.errors import RateLimitExceeded
 from slowapi import Limiter
@@ -136,6 +134,12 @@ def root():
 
     }
     return fastapi.responses.JSONResponse(status_code=200, content=home_data)
+
+
+@api.get("/statistics", description="Get the statistics.")
+async def get_statistics():
+    await astroidapi.surrealdb_handler.Statistics.update_messages(1)
+    return await astroidapi.statistics.get_statistics()
 
 @api.get("/invite/{platform}", description="Get the invite link for the astroid bot.")
 def invite(platform: str, token: Annotated[str, fastapi.Query(max_length=85)] = None):
@@ -703,6 +707,7 @@ async def get_channel_name(platform: str, id: str, token: Annotated[str, fastapi
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This platform does not exist."})
     except:
         return fastapi.responses.JSONResponse(status_code=404, content={"message": "This channel does not exist."})
+
 
 
 logging.info("[CORE] API started.")

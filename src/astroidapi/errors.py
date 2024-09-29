@@ -172,6 +172,37 @@ class SurrealDBHandler:
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+    
+    class ProfileNotFoundError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class ProfileCreationError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class ProfileUpdateError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class ProfileDeletionError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class GetProfileError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+    class GetStatisticsError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
 
 
 class ReadHandlerError:
@@ -234,4 +265,9 @@ class AttachmentProcessError:
                 super().__init__(self.message)
     
     
-    
+
+class ProfileProcessorError:
+    class ProfileNotFoundError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)

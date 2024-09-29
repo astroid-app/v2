@@ -5,6 +5,9 @@ from Bot import config
 import astroidapi.errors as errors
 import traceback
 import pathlib
+import random
+import string
+import datetime
 
 async def sync_local_files(folderpath: str, specific: bool = False):
     try:
@@ -197,8 +200,10 @@ class AttachmentProcessor:
                 await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
                 await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
                 elegible_endpoints = await db.select("attachments:eligible_endpoints")
+                print(elegible_endpoints)
                 if endpoint in elegible_endpoints["endpoints"]:
                     return True
+                return False
 
         except Exception as e:
             raise errors.SurrealDBHandler.CheckEligibilityError(e)
@@ -270,3 +275,63 @@ class CreateEndpoint:
         except Exception as e:
             raise errors.SurrealDBHandler.CreateEndpointError(e)
 
+
+
+
+
+class Statistics:
+    
+    @staticmethod
+    async def getall():
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                messages = await db.select("statistics:messages")
+                entpoints = len(await db.select("endpoints"))
+
+                return {
+                    "messages": messages,
+                    "endpoints": entpoints
+                }
+        except Exception as e:
+            raise errors.SurrealDBHandler.GetStatisticsError(e)
+    
+    @staticmethod
+    async def get_messages():
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                return await db.select("statistics:messages")
+        except Exception as e:
+            raise errors.SurrealDBHandler.GetStatisticsError(e)
+    
+    @staticmethod
+    async def update_messages(increment: int, start_period: bool = False):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                current = datetime.datetime.fromtimestamp(datetime.datetime.now().timestamp())
+                total = await db.select("statistics:messages")
+                total = total["total"]
+                await db.query(f"UPDATE statistics:messages SET total = {total + increment}")
+                if start_period:
+                    await db.query(f"UPDATE statistics:messages SET periodStart = {datetime.datetime.now().timestamp()}")
+                    await db.query(f"UPDATE statistics:messages SET month = 0")
+                period_start = await db.select("statistics:messages")
+                period_start = period_start["periodStart"]
+                print(datetime.datetime.fromtimestamp(period_start) + datetime.timedelta(weeks=4))
+                if current >= datetime.datetime.fromtimestamp(period_start) + datetime.timedelta(weeks=4):
+                    await db.query(f"UPDATE statistics:messages SET periodStart = {datetime.datetime.now().timestamp()}")
+                    await db.query(f"UPDATE statistics:messages SET month = 0")
+                else:
+                    moth = await db.select("statistics:messages")
+                    moth = moth["month"]
+                    await db.query(f"UPDATE statistics:messages SET month = {moth + increment}")
+                
+                return await db.select("statistics:messages")
+        except Exception as e:
+            traceback.print_exc()
+            raise errors.SurrealDBHandler.GetStatisticsError(e)
