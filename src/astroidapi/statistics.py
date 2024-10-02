@@ -15,6 +15,8 @@ async def get_statistics():
         total_messages_rounded = round_down_to_nearest(total_messages, 50)
     elif total_messages < 500:
         total_messages_rounded = round_down_to_nearest(total_messages, 100)
+    elif total_messages < 1000:
+        total_messages_rounded = round_down_to_nearest(total_messages, 500)
     else:
         total_messages_rounded = round_down_to_nearest(total_messages, 1000)
     statistics["messages"]["total_rounded"] = total_messages_rounded
@@ -28,8 +30,11 @@ async def get_statistics():
         total_monthly_messages_rounded = round_down_to_nearest(total_monthly_messages, 50)
     elif total_monthly_messages < 500:
         total_monthly_messages_rounded = round_down_to_nearest(total_monthly_messages, 100)
+    elif total_monthly_messages < 1000:
+        total_monthly_messages_rounded = round_down_to_nearest(total_monthly_messages, 500)
     else:
         total_monthly_messages_rounded = round_down_to_nearest(total_monthly_messages, 1000)
+
     statistics["messages"]["month_rounded"] = total_monthly_messages_rounded
 
 
