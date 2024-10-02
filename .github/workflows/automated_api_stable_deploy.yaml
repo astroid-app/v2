@@ -1,7 +1,7 @@
 name: Deploy Astroid API update via Github Actions
 on: 
   release:
-    types: [published]
+    types: [published, edited]
 
 jobs:
   stop_api:
