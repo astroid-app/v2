@@ -16,6 +16,7 @@ import astroidapi.health_check
 import astroidapi.read_handler
 import astroidapi.surrealdb_handler
 import astroidapi.statistics
+import astroidapi.suspension_handler
 import beta_users
 from fastapi.middleware.cors import CORSMiddleware
 import requests
@@ -28,7 +29,6 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 import astroidapi
-import datetime
 
 # Configure logging to log to a file
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -63,8 +63,7 @@ api = fastapi.FastAPI(
     version="2.1.4",
     docs_url=None
 )
-api.state.limiter = limiter
-api.add_exception_handler(RateLimitExceeded, slowapi._rate_limit_exceeded_handler)
+
 
 
 
@@ -127,7 +126,7 @@ def root():
         "description": "Astroid API for getting and modifying endpoints.",
         "website": "https://astroid.cc",
         "privacy": "https://astroid.cc/privacy",
-        "terms": "https://astroid.cce/terms",
+        "terms": "https://astroid.cc/terms",
         "imprint": "https://deutscher775.de/imprint.html",
         "docs": "https://astroid.cc/docs",
         "discord": "https://discord.gg/DbrFADj6Xw",
@@ -238,6 +237,10 @@ def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length
 @api.get("/{endpoint}", description="Get an endpoint.")
 async def get_endpoint(endpoint: int,
                  token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None, download: bool = False):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     global data_token
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -264,6 +267,9 @@ async def get_endpoint(endpoint: int,
 @api.get("/bridges/{endpoint}", description="Get an endpoint.")
 async def get_bridges(endpoint: int,
                 token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
     global data_token
     try:
         data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
@@ -297,8 +303,12 @@ async def get_bridges(endpoint: int,
 
 
 @api.post("/token/{endpoint}", description="Generate a new token. (Only works with astroid-Bot)")
-def new_token(endpoint: int,
+async def new_token(endpoint: int,
               master_token: Annotated[str, fastapi.Query(max_length=85, min_length=85)]):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     if master_token == Bot.config.MASTER_TOKEN:
         with open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r+") as tokens:
             token = secrets.token_urlsafe(53)
@@ -360,6 +370,10 @@ async def post_endpoint(
     beta: bool = False,
     only_check = False,
 ):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     await astroidapi.endpoint_update_handler.UpdateHandler.update_endpoint(
         endpoint=endpoint,
         index=index,
@@ -391,7 +405,7 @@ async def post_endpoint(
         beta=beta,
         only_check=only_check,
     )
-    return astroidapi.surrealdb_handler.get_endpoint(endpoint)
+    return await astroidapi.surrealdb_handler.get_endpoint(endpoint)
 
 
 @api.patch("/sync", description="Sync the local files with the database.")
@@ -415,6 +429,10 @@ async def mark_read(endpoint: int,
               read_guilded: bool = None,
               read_revolt: bool = None,
               read_nerimity: bool = None):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     if token == data_token or token == Bot.config.MASTER_TOKEN:
         try:
             if read_discord:
@@ -436,6 +454,10 @@ async def mark_read(endpoint: int,
 
 @api.get("/healthcheck/{endpoint}", description="Validate the endpoints strucuture.")
 async def endpoint_healthcheck(endpoint: int, token: str):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     if token == Bot.config.MASTER_TOKEN:
         try:
             healty = await astroidapi.health_check.HealthCheck.EndpointCheck.check(endpoint)
@@ -462,6 +484,12 @@ async def endpoint_healthcheck(endpoint: int, token: str):
 @api.post("/create", description="Create an endpoint.",
           response_description="Endpoints data.")
 async def create_endpoint(endpoint: int):
+    try:
+        suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+        if suspend_status:
+            return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    except:
+        pass
     try:
         data = {
             "config": {
@@ -569,6 +597,10 @@ async def delete_enpoint_data(endpoint: int,
                         message_content: bool = None,
                         message_attachments: Annotated[str, fastapi.Query(max_length=1550, min_length=20)] = None,
                         token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
@@ -650,6 +682,10 @@ async def delete_enpoint_data(endpoint: int,
 
 @api.get("/getendpoint/{platform}", description="Get an endpoint via a platform server id.")
 async def get_endpoint_platform(platform: str, id: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+
     if not token == Bot.config.MASTER_TOKEN:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid. (Only the master token can be used to view or create relations.)"})
     try:
@@ -667,6 +703,10 @@ async def get_endpoint_platform(platform: str, id: str, token: Annotated[str, fa
 
 @api.post("/createendpoint/{platform}", description="Create an endpoint via a platform server id.")
 async def create_endpoint_platform(platform: str, endpoint: int, id: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
     if not token == Bot.config.MASTER_TOKEN:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid. (Only the master token can be used to view or create relations.)"})
     try:

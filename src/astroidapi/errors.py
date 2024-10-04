@@ -1,4 +1,8 @@
 
+# This file contains all the custom exceptions that are raised in the api or during handling.
+# The exceptions are divided into different classes based on the module they are raised in.
+# Exceptions listed here aren't handeled yet. Currently they are just for raising and logging purposes.
+# This will be updated and exceptions will be handeled in the future.
 
 
 class SendingError(Exception):
@@ -204,6 +208,26 @@ class SurrealDBHandler:
             super().__init__(self.message)
     
 
+    class GetSuspensionStatusError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class SuspendEndpointError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class UnsuspendEndpointError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class GetSuspensionError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
 
 class ReadHandlerError:
 
@@ -268,6 +292,24 @@ class AttachmentProcessError:
 
 class ProfileProcessorError:
     class ProfileNotFoundError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+
+class SuspensionHandlerError:
+
+    class GetSuspensionStatusError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class SuspendEndpointError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+    class UnsuspendEndpointError(Exception):
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)

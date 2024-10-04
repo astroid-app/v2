@@ -276,9 +276,6 @@ class CreateEndpoint:
             raise errors.SurrealDBHandler.CreateEndpointError(e)
 
 
-
-
-
 class Statistics:
     
     @staticmethod
@@ -335,3 +332,70 @@ class Statistics:
         except Exception as e:
             traceback.print_exc()
             raise errors.SurrealDBHandler.GetStatisticsError(e)
+        
+
+class Suspension:
+
+    @classmethod
+    async def get_suspend_status(cls, endpoint_id):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                return await db.select(f"suspensions:`{endpoint_id}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.GetSuspensionStatusError(e)
+    
+
+    class Endpoints:
+        @classmethod
+        async def suspend(cls, endpoint_id, reason, suspended_by: int, expire_at: int = None):
+            data = {
+                "reason": reason,
+                "expireAt": expire_at,
+                "type": "endpoint",
+                "suspended": True,
+                "suspendedAt": datetime.datetime.now().timestamp(),
+                "suspendedBy": suspended_by
+            }
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                    await db.create(f"suspensions:`{endpoint_id}`", data)
+                    return await db.select(f"suspensions:`{endpoint_id}`")
+            except Exception as e:
+                raise errors.SurrealDBHandler.SuspendEndpointError(e)
+        
+        @classmethod
+        async def unsuspend(cls, endpoint_id):
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                    await db.delete(f"suspensions:`{endpoint_id}`")
+                    return True
+            except Exception as e:
+                raise errors.SurrealDBHandler.UnsuspendEndpointError(e)
+                    
+        @classmethod
+        async def update(cls, endpoint_id, reason: str = None, suspended_by: int = None, expire_at: int = None):
+            data = {}
+            if reason:
+                data["reason"] = reason
+            if suspended_by:
+                data["suspendedBy"] = suspended_by
+            if expire_at:
+                data["expireAt"] = expire_at
+  
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                    current_data = await db.select(f"suspensions:`{endpoint_id}`")
+                    for key in data:
+                        current_data[key] = data[key]
+                    await db.update(f"suspensions:`{endpoint_id}`", current_data)
+                    return await db.select(f"suspensions:`{endpoint_id}`")
+            except Exception as e:
+                raise errors.SurrealDBHandler.SuspendEndpointError(e)
