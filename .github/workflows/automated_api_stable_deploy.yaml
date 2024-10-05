@@ -1,5 +1,6 @@
 name: Deploy Astroid API update via Github Actions
 on: 
+  workflow_dispatch
   release:
     types: [published, edited]
 
