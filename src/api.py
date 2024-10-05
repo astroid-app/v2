@@ -234,6 +234,15 @@ def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length
                 return response.json()
 
 
+@api.get("/allendpoints", description="Get all endpoints. [Master token or admin token required.]")
+async def get_all_endpoints(token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    if token == Bot.config.MASTER_TOKEN:
+        return await astroidapi.surrealdb_handler.get_all_endpoints()
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+
+
 @api.get("/{endpoint}", description="Get an endpoint.")
 async def get_endpoint(endpoint: int,
                  token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None, download: bool = False):
@@ -464,13 +473,13 @@ async def endpoint_healthcheck(endpoint: int, token: str):
             if healty:
                 return fastapi.responses.JSONResponse(status_code=200, content={"message": "This endpoint is healthy.", "details": None})
         except astroidapi.errors.HealtCheckError.EndpointCheckError.EndpointConfigError as e:
-            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"There seems to be an error in the endpoint configuration: {e}",
+            return fastapi.responses.JSONResponse(status_code=200, content={"message": f"There seems to be an error in the endpoint configuration: {e}",
                                                                             "details": "configerror"})
         except astroidapi.errors.HealtCheckError.EndpointCheckError.EndpointMetaDataError as e:
-            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"There seems to be an error in the endpoint meta data: {e}",
+            return fastapi.responses.JSONResponse(status_code=200, content={"message": f"There seems to be an error in the endpoint meta data: {e}",
                                                                             "details": "metadataerror"})
         except astroidapi.errors.HealtCheckError.EndpointCheckError as e:
-            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}",
+            return fastapi.responses.JSONResponse(status_code=200, content={"message": f"An error occurred: {e}",
                                                                             "details": "unexpectederror"})
         except astroidapi.errors.SurrealDBHandler.EndpointNotFoundError:
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist.",
@@ -746,8 +755,6 @@ async def get_channel_name(platform: str, id: str, token: Annotated[str, fastapi
             return fastapi.responses.JSONResponse(status_code=404, content={"message": "This platform does not exist."})
     except:
         return fastapi.responses.JSONResponse(status_code=404, content={"message": "This channel does not exist."})
-
-
 
 logging.info("[CORE] API started.")
 

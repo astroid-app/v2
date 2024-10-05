@@ -132,6 +132,20 @@ async def mark_read(endpoint, platform):
         raise errors.ReadHandlerError.MarkReadError(e)
 
 
+async def get_all_endpoints():
+    try:
+        async with Surreal(config.SDB_URL) as db:
+            await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+            await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+            results = await db.query("SELECT id FROM endpoints")
+            results = results[0]["result"]
+            results = [result["id"] for result in results]
+            results = [result.replace("endpoints:⟨", "").replace("⟩", "") for result in results]
+            return results
+    except Exception as e:
+        raise errors.SurrealDBHandler.GetEndpointError(e)
+
+
 class AttachmentProcessor:
 
     @classmethod
