@@ -691,10 +691,6 @@ async def delete_enpoint_data(endpoint: int,
 
 @api.get("/getendpoint/{platform}", description="Get an endpoint via a platform server id.")
 async def get_endpoint_platform(platform: str, id: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
-    if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
-
     if not token == Bot.config.MASTER_TOKEN:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid. (Only the master token can be used to view or create relations.)"})
     try:
