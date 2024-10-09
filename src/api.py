@@ -64,10 +64,6 @@ api = fastapi.FastAPI(
     docs_url=None
 )
 
-
-
-
-
 api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -488,6 +484,23 @@ async def endpoint_healthcheck(endpoint: int, token: str):
             traceback.print_exc()
             return fastapi.responses.JSONResponse(status_code=404, content={"message": f"An error occurred: {e}",
                                                                             "details": "getendpointerror"})
+
+
+@api.post("/healthcheck/{endpoint}/repair", description="Repair the endpoint.")
+async def repair_endpoint(endpoint: int, token: str):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+    
+    if token == Bot.config.MASTER_TOKEN:
+        try:
+            summary = await astroidapi.health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
+            return fastapi.responses.JSONResponse(status_code=200, content={"message": "Repaired.", "summary": summary})
+        except Exception as e:
+            logging.exception(traceback.print_exc())
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
 
 
 @api.post("/create", description="Create an endpoint.",

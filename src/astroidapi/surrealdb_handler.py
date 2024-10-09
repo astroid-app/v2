@@ -146,6 +146,19 @@ async def get_all_endpoints():
         raise errors.SurrealDBHandler.GetEndpointError(e)
 
 
+async def write_to_structure(endpoint, key, value):
+    print(f"Writing {key} to {endpoint}")
+    try:
+        async with Surreal(config.SDB_URL) as db:
+            await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+            await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+            print(key, value)
+            await db.query(f"UPDATE endpoints:`{endpoint}` SET {key} = {value}")
+            return await db.query(f"SELECT * FROM endpoints:`{endpoint}`")
+    except Exception as e:
+        raise errors.SurrealDBHandler.UpdateEndpointError(e)
+
+
 class AttachmentProcessor:
 
     @classmethod

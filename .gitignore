@@ -1,7 +1,6 @@
 .idea
 .git
 *.log
-*_servers*
 .github
 LICENSE
 tokens.json
@@ -9,19 +8,17 @@ tokens.json
 beta
 Copy of endpoints
 beta_users.py
-tokens.json
 TMP
 __pycache__
 endpoints*
-tokens*
-src/tokens.json
-src/Bot/config.py
 src/_astroidapi.log
 /website
 /web
 website.zip
-src/Bot/config.py
 src/astroidapi.zip
 src/astroidapi/beta_config.py
 src/Bot/config.py
-
+src/Bot/nerimity_servers/1528027692992208896.json
+src/tokens.json
+assets/517057624072519680.png
+src/astroidapi/test.py
