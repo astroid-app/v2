@@ -209,11 +209,25 @@ class SendingHandler():
                         "Authorization": f"{config.NERIMITY_TOKEN}",
                     }
                     print(channel_id)
-                    formdata = aiohttp.FormData()
-                    formdata.add_field("content", f"**{message_author_name}**: {message_content}")
+                    payload = {
+                        "content": f"**{message_author_name}**: {message_content}",
+                    }
+                    nerimityCdnFileId = None
                     if attachments is not None:
-                        formdata.add_field("attachment", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
-                    r = await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=formdata)
+                        formdata = aiohttp.FormData()
+                        formdata.add_field("f", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
+                        async with session.post("https://cdn.nerimity.com/upload", headers=headers, data=formdata) as r:
+                            if r.ok:
+                                nerimityCdnFileId = (await r.json())["fileId"]
+                                async with session.post(f"https://cdn.nerimity.com/attachments/{int(channel_id)}/{nerimityCdnFileId}", headers=headers) as r:
+                                    if r.ok:
+                                        nerimityCdnFileId = (await r.json())["fileId"]
+                                        payload["nerimityCdnFileId"] = nerimityCdnFileId
+                                    else:
+                                        raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
+                            else:
+                                raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
+                    r = await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=payload)
                     print(f"Sent to nerimity. Response: {r.status}, {r.reason} {await r.text()}")
                     await session.close()
                     if attachments is not None:
