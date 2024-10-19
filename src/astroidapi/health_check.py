@@ -30,7 +30,7 @@ writes = {
         },
         "blacklist": "config.blacklist",
         "allowed-ids": "config.`allowed-ids`",
-        "isbeta": "config.isbeta`"
+        "isbeta": "config.isbeta"
     },
     "meta": {
         "sender-channel": "meta.`sender-channel`",
@@ -122,7 +122,7 @@ class HealthCheck:
                 }
             }
             try:
-                endpoint_data = await surrealdb_handler.get_endpoint(endpoint)
+                endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
                 for key in healthy_endpoint_data["config"].keys():
                     if key not in endpoint_data["config"]:
                         raise errors.HealtCheckError.EndpointCheckError.EndpointConfigError(f"'{key}' not found in endpoint config '{endpoint}'")
@@ -189,7 +189,7 @@ class HealthCheck:
                 }
             }
             try:
-                endpoint_data = await surrealdb_handler.get_endpoint(endpoint)
+                endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
                 summary = []
                 try:
                     self_user = endpoint_data["config"]["self-user"]

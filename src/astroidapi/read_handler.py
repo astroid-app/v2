@@ -6,7 +6,7 @@ class ReadHandler:
     async def mark_read(cls, endpoint, platform):
         try:
             print(f"Marking {platform} read")
-            endpoint_data = await surrealdb_handler.get_endpoint(endpoint)
+            endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
             if endpoint_data is None:
                 raise errors.SurrealDBHandler.EndpointNotFoundError(f"'{endpoint}' not found")
             if await cls.check_read(endpoint, platform):
@@ -30,7 +30,7 @@ class ReadHandler:
                         raise errors.ReadHandlerError.InvalidPlatformError(f"Invalid platform '{platform}'")
                     read = read[platform]
                 return read
-            endpoint = await surrealdb_handler.get_endpoint(endpoint)
+            endpoint = await surrealdb_handler.get_endpoint(endpoint, __file__)
             if endpoint is None:
                 raise errors.SurrealDBHandler.EndpointNotFoundError(f"'{endpoint}' not found")
             read = endpoint["meta"]["read"]

@@ -49,7 +49,7 @@ class UpdateHandler:
 
             if token is not None:
                 if token == config.MASTER_TOKEN or token == data_token:
-                    endpoint_data = await surrealdb_handler.get_endpoint(endpoint)
+                    endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
                     if endpoint_data:
                         if only_check:
                             if endpoint_data["meta"]["read"]["discord"] and endpoint_data["meta"]["read"]["guilded"] and endpoint_data["meta"]["read"]["revolt"]:
@@ -234,7 +234,7 @@ class UpdateHandler:
                                     waiting_secs = 0
                                     max_secs = 10
                                     while True:
-                                        check_json = await surrealdb_handler.get_endpoint(endpoint)
+                                        check_json = await surrealdb_handler.get_endpoint(endpoint, __file__)
                                         if (check_json["meta"]["read"]["discord"] == True
                                                 and check_json["meta"]["read"]["guilded"] == True
                                                 and check_json["meta"]["read"]["revolt"] == True
@@ -291,7 +291,7 @@ class UpdateHandler:
             waiting_secs = 0
             max_secs = 10
             while True:
-                check_json = await surrealdb_handler.get_endpoint(endpoint)
+                check_json = await surrealdb_handler.get_endpoint(endpoint, __file__)
                 if check_json["meta"]["trigger"] is False and check_json["meta"]["message"]["content"] is None:
                     return fastapi.responses.JSONResponse(status_code=200, content=check_json)
                 if (check_json["meta"]["read"]["discord"] == True

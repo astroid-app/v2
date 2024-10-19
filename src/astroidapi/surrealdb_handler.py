@@ -65,9 +65,9 @@ async def sync_server_relations():
     
 
 
-async def get_endpoint(endpoint: int):
+async def get_endpoint(endpoint: int, caller: str):
     try:
-        print(f"{endpoint} called by {__file__}")
+        print(f"{endpoint} called by {caller}")
         async with Surreal(config.SDB_URL) as db:
             await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
             await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
@@ -400,7 +400,8 @@ class Suspension:
                 async with Surreal(config.SDB_URL) as db:
                     await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
                     await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
-                    await db.delete(f"suspensions:`{endpoint_id}`")
+                    await db.delete(endpoint_id)
+                    print(f"Endpoint {endpoint_id} has been unsuspended")
                     return True
             except Exception as e:
                 raise errors.SurrealDBHandler.UnsuspendEndpointError(e)
@@ -426,3 +427,35 @@ class Suspension:
                     return await db.select(f"suspensions:`{endpoint_id}`")
             except Exception as e:
                 raise errors.SurrealDBHandler.SuspendEndpointError(e)
+        
+        @staticmethod
+        async def _checkexpireloop():
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                    data = await db.select("suspensions")
+                    for suspension in data:
+                        print(f"Checking {suspension['id']}")
+                        if datetime.datetime.now() >= datetime.datetime.fromtimestamp(suspension["suspendedAt"]):
+                            print(f"Endpoint {suspension['id']} has expired")
+                            await Suspension.Endpoints.unsuspend(suspension["id"])
+                    return True
+            except Exception as e:
+                raise errors.SurrealDBHandler.SuspensionHandlerError(e)
+        
+        @staticmethod   
+        async def _checkendpointdatadeletionloop():
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                    data = await db.select("endpoints")
+                    for endpoint in data:
+                        print(f"Checking {endpoint['id']}")
+                        if not endpoint["expireAt"] and datetime.datetime.now() <= datetime.datetime.fromtimestamp(endpoint["suspendetAt"]) + datetime.timedelta(weeks=1):
+                            await delete(endpoint["id"])
+                    return True
+            except Exception as e:
+                raise errors.SurrealDBHandler.SuspensionHandlerError(e)
+            

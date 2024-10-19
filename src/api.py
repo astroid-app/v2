@@ -255,7 +255,7 @@ async def get_endpoint(endpoint: int,
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
-                return fastapi.responses.JSONResponse(status_code=200, content=await astroidapi.surrealdb_handler.get_endpoint(endpoint))
+                return fastapi.responses.JSONResponse(status_code=200, content=await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__))
             except astroidapi.errors.SurrealDBHandler.EndpointNotFoundError as e:
                 return fastapi.responses.JSONResponse(status_code=404, content={"message": f"Endpoint {endpoint} not found."})
             except astroidapi.errors.SurrealDBHandler.GetEndpointError as e:
@@ -284,7 +284,7 @@ async def get_bridges(endpoint: int,
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
-                bridges_json = await astroidapi.surrealdb_handler.get_endpoint(endpoint)
+                bridges_json = await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__)
                 bridges_discord = []
                 bridges_guilded = []
                 bridges_revolt = []
@@ -410,7 +410,7 @@ async def post_endpoint(
         beta=beta,
         only_check=only_check,
     )
-    return await astroidapi.surrealdb_handler.get_endpoint(endpoint)
+    return await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__)
 
 
 @api.patch("/sync", description="Sync the local files with the database.")
@@ -627,7 +627,7 @@ async def delete_enpoint_data(endpoint: int,
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
-                json_data = await astroidapi.surrealdb_handler.get_endpoint(endpoint)
+                json_data = await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__)
                 if webhook_discord:
                     json_data["config"]["webhooks"]["discord"].pop(json_data["config"]["webhooks"]["discord"].index(webhook_discord))
                 if webhook_guilded:
