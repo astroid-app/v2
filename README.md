@@ -21,4 +21,4 @@ If you encounter bugs, errors or other things feel free to contact me or open a 
 If you change your code in any way that isn't supposed to change and bugs/errors occour, **dont** contact me to ask why xyz isn't working!
 
 ### Nerimity Package License
-The Licence for the `nerimity` package can be found in `Bot/nerimity/LICENSE.txt`
+The Licence for the `nerimity` package can be found in `src/Bot/nerimity/LICENSE.txt`
