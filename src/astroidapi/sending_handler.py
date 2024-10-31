@@ -21,20 +21,13 @@ class SendingHandler():
     async def distribute(cls, endpoint, updated_json):
         try:
             sender = updated_json["meta"]["sender"]
-
             registered_platforms = [platform for platform in updated_json["config"]["channels"] if len(updated_json["config"]["channels"][platform]) > 0]
-
-            is_eligible = await surrealdb_handler.AttachmentProcessor.check_eligibility(endpoint)
-
-            print(f"Is eligible: {is_eligible}")
-            if is_eligible is True:
-                if len(updated_json["meta"]["message"]["attachments"]) > 0:
-                    attachments = []
-                    for attachment in updated_json["meta"]["message"]["attachments"]:
-                        file = await attachment_processor.download_attachment(attachment, registered_platforms)
-                        attachments.append(file)
-                else:
-                    attachments = None
+            
+            if len(updated_json["meta"]["message"]["attachments"]) > 0:
+                attachments = []
+                for attachment in updated_json["meta"]["message"]["attachments"]:
+                    file = await attachment_processor.download_attachment(attachment, registered_platforms)
+                    attachments.append(file)
             else:
                 attachments = None
 
