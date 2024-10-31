@@ -10,9 +10,15 @@ async def download_attachment(attachment_url, registeredPlatforms):
     try: 
         response = requests.get(attachment_url)
         if response.status_code == 200:
-            if int(response.headers["content-length"]) > 50 * 1024 * 1024: # value in B -> KB -> MB
-                raise errors.AttachmentProcessError.AttachmentDownloadError.AttachmentTooLarge("Attachment is too large. Maximum size is 50MB.")
-            print(f"Downloafing attachment from {attachment_url}. Size: {int(response.headers['content-length']) / 1024 }KB")
+            try:
+                content_length = response.headers["content-length"]
+                if int(response.headers["content-length"]) > 50 * 1024 * 1024: # value in B -> KB -> MB
+                    raise errors.AttachmentProcessError.AttachmentDownloadError.AttachmentTooLarge("Attachment is too large. Maximum size is 50MB.")
+            except KeyError:
+                content_length = len(response.content)
+                if content_length > 50 * 1024 * 1024:
+                    raise errors.AttachmentProcessError.AttachmentDownloadError.AttachmentTooLarge("Attachment is too large. Maximum size is 50MB.")
+            print(f"Downloading attachment from {attachment_url}. Size: {int(content_length) / 1024 }KB")
             id_chars = string.ascii_lowercase + string.digits
             attachment_id = "".join(random.choices(id_chars, k=16))
             attachment_name = attachment_url.split('/')[-1]
@@ -59,7 +65,10 @@ async def clear_temporary_attachments():
 async def check_attachment(attachment_id):
     try:
         attachment = await surrealdb_handler.AttachmentProcessor.get_attachment(attachment_id)
-        sentBy = attachment["sentBy"]
+        try:
+            sentBy = attachment["sentBy"]
+        except TypeError:
+            return
         if sentBy["discord"] and sentBy["guilded"] and sentBy["revolt"] and sentBy["nerimity"]:
             await surrealdb_handler.AttachmentProcessor.update_attachment(attachment_id, status="canDelete")
             
