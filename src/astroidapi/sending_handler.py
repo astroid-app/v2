@@ -183,7 +183,7 @@ class SendingHandler():
     async def send_to_nerimity(cls, updated_json, endpoint, attachments: list = None):
         try:
             read_nerimity = await read_handler.ReadHandler.check_read(endpoint, "nerimity")
-            if read_nerimity is False and updated_json["config"]["isbeta"] is True:
+            if read_nerimity is False:
                 async with aiohttp.ClientSession() as session:
                     response_json = updated_json
                     sender_channel = response_json["meta"]["sender-channel"]
@@ -198,9 +198,14 @@ class SendingHandler():
                         raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
                     message_author_name = response_json["meta"]["message"]["author"]["name"]
                     message_content = response_json["meta"]["message"]["content"]
-                    headers = {
-                        "Authorization": f"{config.NERIMITY_TOKEN}",
-                    }
+                    if updated_json["config"]["isbeta"] is True:
+                        headers = {
+                            "Authorization": f"{config.BETA_NERIMITY_TOKEN}",
+                        }
+                    else:
+                        headers = {
+                            "Authorization": f"{config.NERIMITY_TOKEN}",
+                        }
                     print(channel_id)
                     payload = {
                         "content": f"**{message_author_name}**: {message_content}",
