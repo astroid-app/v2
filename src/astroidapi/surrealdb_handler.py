@@ -165,7 +165,7 @@ class AttachmentProcessor:
     async def create_attachment(cls, attachment_id: str, status: str, type: str, registeredPlatforms: list):
         if status and status not in ["downloading", "downloaded", "sent", "canDelete"]:
             raise errors.SurrealDBHandler.CreateAttachmentError(f"Invalid status: {status}")
-        if type and type not in [".mp4", ".mp3", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".txt", ".json", ".csv", ".xml", ".html", ".css", ".js", ".py", ".java", ".c", ".cpp", ".h", ".hpp", ".cs", ".rb", ".php", ".go", ".rs", ".ts", ".tsx", ".jsx", ".html", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf"]:
+        if type and f".{type}" not in [".mp4", ".mp3", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".txt", ".json", ".csv", ".xml", ".html", ".css", ".js", ".py", ".java", ".c", ".cpp", ".h", ".hpp", ".cs", ".rb", ".php", ".go", ".rs", ".ts", ".tsx", ".jsx", ".html", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf"]:
             raise errors.SurrealDBHandler.CreateAttachmentError(f"Invalid type: {type}")
         try:
             async with Surreal(config.SDB_URL) as db:

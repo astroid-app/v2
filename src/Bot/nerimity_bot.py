@@ -123,20 +123,24 @@ async def register(ctx: nerimity.Context, params: str):
                             await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
                         else:
                             await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+            except AttributeError:
+                pass
             except Exception as e:
                 await ctx.send(f"An error occurred while trying to register the endpoint. Please report this in the [Support Server](https://nerimity.com/i/fgE6q). \n\n`{e}`")
-
-    try:
-        channel_id = ctx.channel.id
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"https://api.astroid.cc/update/{endpoint}?channel_nerimity={channel_id}&token={config.MASTER_TOKEN}") as response:
-                data = await response.json()
-                if response.ok:
-                    await ctx.send(f"Updated endpoint: https://api.astroid.cc/{endpoint}")
-                else:
-                    await ctx.send(f"Oops, something went wrong: `{data['message']}`")
-    except Exception as e:
-        await ctx.send(f"An error occurred while trying to update the endpoint. Please report this in the [Support Server](https://nerimity.com/i/fgE6q). \n\n`{e}`")
+            finally:
+                try:
+                    channel_id = ctx.channel.id
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(f"https://api.astroid.cc/update/{endpoint}?channel_nerimity={channel_id}&token={config.MASTER_TOKEN}") as response:
+                            data = await response.json()
+                            if response.ok:
+                                await ctx.send(f"Updated endpoint: https://api.astroid.cc/{endpoint}")
+                            else:
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                except AttributeError:
+                    pass
+                except Exception as e:
+                    await ctx.send(f"An error occurred while trying to update the endpoint. Please report this in the [Support Server](https://nerimity.com/i/fgE6q). \n\n`{e}`")
     
 
 

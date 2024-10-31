@@ -150,15 +150,16 @@ async def on_message(message: nextcord.Message):
                 if message.attachments:
                     print(3) 
                     if len(message.attachments) == 1:
+                        print(message.attachments[0].url)
                         # Update the message content with attachment in the API
-                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url}") as update_request:
+                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('&', '%26')}") as update_request:
                             pass
                     else:
                         attachments = ""
                         for attachment in message.attachments:
                             attachments += attachment.url
                         # Update the message content with multiple attachments in the API
-                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}") as update_request:
+                        async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1].replace('&', '%26')}") as update_request:
                             pass
     except KeyError:
         pass
