@@ -2,7 +2,7 @@ import aiohttp
 import nextcord
 import guilded
 import asyncio
-from Bot import config
+import Bot.config as config
 import astroidapi.errors as errors
 import astroidapi.surrealdb_handler as surrealdb_handler
 import astroidapi.read_handler as read_handler
@@ -93,6 +93,8 @@ class SendingHandler():
 
     @classmethod
     async def send_to_discord(cls, updated_json, endpoint, attachments: list = None):
+        if len(updated_json["config"]["channels"]["discord"]) == 0:
+            return True
         try:
             read_discord = await read_handler.ReadHandler.check_read(endpoint, "discord")
             if read_discord is False:
@@ -117,6 +119,8 @@ class SendingHandler():
                         if updated_json["meta"]["message"]["attachments"] is not None:
                             if updated_json["meta"]["message"]["attachments"] is not None:
                                 message_content = "‎ "
+                    if updated_json["meta"]["message"]["isReply"] is True:
+                        message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n{updated_json['meta']['message']['reply']['content']}\n\n{message_content}"
                     await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
                     await session.close()
                     for file in nextcord_files:
@@ -134,6 +138,8 @@ class SendingHandler():
 
     @classmethod
     async def send_to_guilded(cls, updated_json, endpoint, attachments: list = None):
+        if len(updated_json["config"]["channels"]["guilded"]) == 0:
+            return True
         try:
             read_guilded = await read_handler.ReadHandler.check_read(endpoint, "guilded")
             if read_guilded is False:
@@ -160,6 +166,8 @@ class SendingHandler():
                         if message_content is None or message_content == "" or message_content == " ":
                             if updated_json["meta"]["message"]["attachments"] is not None:
                                 message_content = "‎ "
+                        if updated_json["meta"]["message"]["isReply"] is True:
+                            message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n{updated_json['meta']['message']['reply']['content']}\n\n{message_content}"
                         await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
                     except AttributeError:
                         pass
@@ -178,6 +186,8 @@ class SendingHandler():
 
     @classmethod
     async def send_to_nerimity(cls, updated_json, endpoint, attachments: list = None):
+        if len(updated_json["config"]["channels"]["nerimity"]) == 0:
+            return True
         try:
             read_nerimity = await read_handler.ReadHandler.check_read(endpoint, "nerimity")
             if read_nerimity is False:
@@ -197,6 +207,7 @@ class SendingHandler():
                     message_content = response_json["meta"]["message"]["content"]
                     if updated_json["config"]["isbeta"] is True:
                         headers = {
+
                             "Authorization": f"{config.BETA_NERIMITY_TOKEN}",
                         }
                     else:
@@ -204,9 +215,14 @@ class SendingHandler():
                             "Authorization": f"{config.NERIMITY_TOKEN}",
                         }
                     print(channel_id)
+
                     payload = {
                         "content": f"**{message_author_name}**: {message_content}",
                     }
+                    if updated_json["meta"]["message"]["isReply"] is True:
+                        payload = {
+                            "content": f"> **{updated_json['meta']['message']['reply']['author']}**\n{updated_json['meta']['message']['reply']['message']}\n\n**{message_author_name}**: {message_content}",
+                        }
                     nerimityCdnFileId = None
                     if attachments is not None:
                         formdata = aiohttp.FormData()

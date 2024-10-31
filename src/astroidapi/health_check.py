@@ -45,6 +45,12 @@ writes = {
         },
         "type_message": "meta.message",
         "message": {
+            "type_reply": "meta.message.reply",
+            "isReply": "meta.message.isReply",
+            "reply": {
+            "message": "meta.message.reply.message",
+            "author": "meta.message.reply.author"
+        },
             "type_author": "meta.message.author",
             "author": {
                 "name": "meta.message.author.name",
@@ -111,6 +117,11 @@ class HealthCheck:
                         "nerimity": False
                     },
                     "message": {
+                        "isReply": False,
+                        "reply": {
+                            "message": None,
+                            "author": None
+                        },
                         "author": {
                             "name": None,
                             "avatar": None,
@@ -177,6 +188,12 @@ class HealthCheck:
                     },
                     "type_message": {},
                     "message": {
+                        "isReply": False,
+                        "type_reply": {},
+                        "reply": {
+                            "message": "NULL",
+                            "author": "NULL"
+                        },
                         "type_author": {},
                         "author": {
                             "name": "NULL",
@@ -388,6 +405,34 @@ class HealthCheck:
                     summary.append("✘ Meta - Message not found. Adding...")
                 await asyncio.sleep(0.1)
                 try:
+                    is_reply = endpoint_data["meta"]["message"]["isReply"]
+                    summary.append("✔ Meta - Message - IsReply found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["meta"]["message"]["isReply"], healthy_endpoint_data["meta"]["message"]["isReply"])
+                    summary.append("✘ Meta - Message - IsReply not found. Adding...")
+                await asyncio.sleep(0.1)
+                try:    
+                    reply = endpoint_data["meta"]["message"]["reply"]
+                    summary.append("✔ Meta - Message - Reply found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["meta"]["message"]["type_reply"], healthy_endpoint_data["meta"]["message"]["type_reply"])
+                    summary.append("✘ Meta - Message - Reply not found. Adding...")
+                await asyncio.sleep(0.1)
+                try:
+                    reply_message = endpoint_data["meta"]["message"]["reply"]["message"]
+                    summary.append("✔ Meta - Message - Reply - Message found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["meta"]["message"]["reply"]["message"], healthy_endpoint_data["meta"]["message"]["reply"]["message"])
+                    summary.append("✘ Meta - Message - Reply - Message not found. Adding...")
+                await asyncio.sleep(0.1)
+                try:
+                    reply_author = endpoint_data["meta"]["message"]["reply"]["author"]
+                    summary.append("✔ Meta - Message - Reply - Author found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["meta"]["message"]["reply"]["author"], healthy_endpoint_data["meta"]["message"]["reply"]["author"])
+                    summary.append("✘ Meta - Message - Reply - Author not found. Adding...")
+                await asyncio.sleep(0.1)
+                try:
                     message_author = endpoint_data["meta"]["message"]["author"]
                     summary.append("✔ Meta - Message - Author found")
                 except KeyError:
@@ -432,6 +477,5 @@ class HealthCheck:
                 return summary
             except IndexError as e:
                 raise errors.HealtCheckError.EndpointCheckError(e)
-
 
 # asyncio.run(HealthCheck.EndpointCheck.repair_structure(1))

@@ -36,6 +36,9 @@ class UpdateHandler:
         message_author_name: str = None,
         message_author_avatar: str = None,
         allowed_ids: str = None,
+        message_reply: bool = False,
+        message_reply_message: str = None,
+        message_reply_author: str = None,
         message_author_id: str = None,
         message_content: str = None,
         message_attachments: str = None,
@@ -181,6 +184,15 @@ class UpdateHandler:
                                         endpoint_data["config"]["allowed-ids"][index] = allowed_ids
                                     else:
                                         endpoint_data["config"]["allowed-ids"].append(allowed_ids)
+                        
+                        if message_reply:
+                            endpoint_data["meta"]["message"]["isReply"] = message_reply
+                        
+                        if message_reply_message:
+                            endpoint_data["meta"]["message"]["reply"]["message"] = message_reply_message
+
+                        if message_reply_author:
+                            endpoint_data["meta"]["message"]["reply"]["author"] = message_reply_author
 
                         if message_author_id:
                             endpoint_data["meta"]["message"]["author"]["id"] = message_author_id
@@ -247,6 +259,9 @@ class UpdateHandler:
                                             check_json["meta"]["trigger"] = False
                                             check_json["meta"]["sender"] = None
                                             check_json["meta"]["sender-channel"] = None
+                                            ckeck_json["meta"]["message"]["isReply"] = False
+                                            ckeck_json["meta"]["message"]["reply"]["message"] = None
+                                            check_json["meta"]["message"]["reply"]["author"] = None
                                             check_json["meta"]["read"]["discord"] = False
                                             check_json["meta"]["read"]["guilded"] = False
                                             check_json["meta"]["read"]["revolt"] = False
@@ -266,6 +281,9 @@ class UpdateHandler:
                                             check_json["meta"]["trigger"] = False
                                             check_json["meta"]["sender"] = None
                                             check_json["meta"]["sender-channel"] = None
+                                            ckeck_json["meta"]["message"]["isReply"] = False
+                                            ckeck_json["meta"]["message"]["reply"]["message"] = None
+                                            check_json["meta"]["message"]["reply"]["author"] = None
                                             check_json["meta"]["read"]["discord"] = False
                                             check_json["meta"]["read"]["guilded"] = False
                                             check_json["meta"]["read"]["revolt"] = False
