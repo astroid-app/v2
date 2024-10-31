@@ -52,8 +52,7 @@ class SendingHandler():
         try:
             asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
             asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
-            if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
+            asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
         except Exception as e:
             raise errors.SendingError.SendFromDiscordError(e)
 
@@ -62,8 +61,7 @@ class SendingHandler():
     async def send_from_nerimity(cls, updated_json, endpoint, attachments: list = None):
         try:
             asyncio.create_task(cls.send_to_discord(updated_json, endpoint, attachments))
-            if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
+            asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
                 asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
             return True
@@ -86,8 +84,7 @@ class SendingHandler():
     async def send_from_guilded(cls, updated_json, endpoint, attachments: list = None):
         try:
             asyncio.create_task(cls.send_to_discord(updated_json, endpoint, attachments))
-            if updated_json["config"]["isbeta"] is True:
-                asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
+            asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
             if updated_json["config"]["isbeta"] is True:
                 asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
             return True
