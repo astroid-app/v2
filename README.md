@@ -20,5 +20,5 @@ This code are ***our*** API and bots that runs on our own servers. If you have p
 If you encounter bugs, errors or other things feel free to contact me or open a issue/pull request.
 If you change your code in any way that isn't supposed to change and bugs/errors occour, **dont** contact me to ask why xyz isn't working!
 
-### Nerimity Package Licence
+### Nerimity Package License
 The Licence for the `nerimity` package can be found in `Bot/nerimity/LICENSE.txt`
