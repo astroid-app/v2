@@ -222,7 +222,7 @@ class SendingHandler():
                     }
                     if updated_json["meta"]["message"]["isReply"] is True:
                         payload = {
-                            "content": f"> **{updated_json['meta']['message']['reply']['author']}**\n> {updated_json['meta']['message']['reply']['message']}\n\n**{message_author_name}**: {message_content}",
+                            "content": f"> **{updated_json['meta']['message']['reply']['author']}**: {updated_json['meta']['message']['reply']['message']}\n\n**{message_author_name}**: {message_content}",
                         }
                     nerimityCdnFileId = None
                     if attachments is not None:
