@@ -39,7 +39,8 @@ class SendingHandler():
                 await cls.send_from_revolt(updated_json, endpoint, attachments)
             if sender == "nerimity":
                 await cls.send_from_nerimity(updated_json, endpoint, attachments)
-            await attachment_processor.clear_temporary_attachments()
+            if attachments is not None:
+                await attachment_processor.clear_temporary_attachments()
             asyncio.create_task(statistics.update_statistics())
             return True
         except Exception as e:
@@ -120,7 +121,7 @@ class SendingHandler():
                             if updated_json["meta"]["message"]["attachments"] is not None:
                                 message_content = "‎ "
                     if updated_json["meta"]["message"]["isReply"] is True:
-                        message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n{updated_json['meta']['message']['reply']['content']}\n\n{message_content}"
+                        message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n> {updated_json['meta']['message']['reply']['message']}\n\n{message_content}"
                     await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=nextcord_files)
                     await session.close()
                     for file in nextcord_files:
@@ -167,7 +168,7 @@ class SendingHandler():
                             if updated_json["meta"]["message"]["attachments"] is not None:
                                 message_content = "‎ "
                         if updated_json["meta"]["message"]["isReply"] is True:
-                            message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n{updated_json['meta']['message']['reply']['content']}\n\n{message_content}"
+                            message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n> {updated_json['meta']['message']['reply']['message']}\n\n{message_content}"
                         await webhook_obj.send(content=message_content, avatar_url=updated_json["meta"]["message"]["author"]["avatar"], username=formatter.Format.format_username(updated_json["meta"]["message"]["author"]["name"]), files=guilded_files)
                     except AttributeError:
                         pass
@@ -221,7 +222,7 @@ class SendingHandler():
                     }
                     if updated_json["meta"]["message"]["isReply"] is True:
                         payload = {
-                            "content": f"> **{updated_json['meta']['message']['reply']['author']}**\n{updated_json['meta']['message']['reply']['message']}\n\n**{message_author_name}**: {message_content}",
+                            "content": f"> **{updated_json['meta']['message']['reply']['author']}**\n> {updated_json['meta']['message']['reply']['message']}\n\n**{message_author_name}**: {message_content}",
                         }
                     nerimityCdnFileId = None
                     if attachments is not None:

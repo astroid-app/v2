@@ -259,8 +259,8 @@ class UpdateHandler:
                                             check_json["meta"]["trigger"] = False
                                             check_json["meta"]["sender"] = None
                                             check_json["meta"]["sender-channel"] = None
-                                            ckeck_json["meta"]["message"]["isReply"] = False
-                                            ckeck_json["meta"]["message"]["reply"]["message"] = None
+                                            check_json["meta"]["message"]["isReply"] = False
+                                            check_json["meta"]["message"]["reply"]["message"] = None
                                             check_json["meta"]["message"]["reply"]["author"] = None
                                             check_json["meta"]["read"]["discord"] = False
                                             check_json["meta"]["read"]["guilded"] = False
@@ -281,8 +281,8 @@ class UpdateHandler:
                                             check_json["meta"]["trigger"] = False
                                             check_json["meta"]["sender"] = None
                                             check_json["meta"]["sender-channel"] = None
-                                            ckeck_json["meta"]["message"]["isReply"] = False
-                                            ckeck_json["meta"]["message"]["reply"]["message"] = None
+                                            check_json["meta"]["message"]["isReply"] = False
+                                            check_json["meta"]["message"]["reply"]["message"] = None
                                             check_json["meta"]["message"]["reply"]["author"] = None
                                             check_json["meta"]["read"]["discord"] = False
                                             check_json["meta"]["read"]["guilded"] = False
