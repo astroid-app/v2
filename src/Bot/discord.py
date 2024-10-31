@@ -148,7 +148,7 @@ async def on_message(message: nextcord.Message):
                     async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_embed={embed}") as update_request:
                         pass
                 if message.attachments:
-                    print(3)
+                    print(3) 
                     if len(message.attachments) == 1:
                         # Update the message content with attachment in the API
                         async with session.post(f"https://astroid.deutscher775.de/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url}") as update_request:

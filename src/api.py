@@ -141,6 +141,8 @@ def invite(platform: str, token: Annotated[str, fastapi.Query(max_length=85)] = 
         return fastapi.responses.RedirectResponse(status_code=301, url="https://discord.com/oauth2/authorize?client_id=1046057269202268303&permissions=2687625280&scope=bot%20applications.commands")
     elif platform == "guilded":
         return fastapi.responses.RedirectResponse(status_code=301, url="https://www.guilded.gg/b/00c19caa-e176-45f6-b1f6-7bee5ba73db9")
+    elif platform == "nerimity":
+        return fastapi.responses.RedirectResponse(status_code=301, url="https://nerimity.com/bot/1570083353837875200?perms=202")
     elif platform == "discord-beta" and token in beta_users.TOKENS:
         return fastapi.responses.RedirectResponse(status_code=301, url="https://discord.com/oauth2/authorize?client_id=1230579871059804280&permissions=138046467089&scope=applications.commands+bot")
     elif platform == "guilded-beta" and token in beta_users.TOKENS:
