@@ -30,6 +30,8 @@ async def download_attachment(attachment_url, registeredPlatforms):
             await surrealdb_handler.AttachmentProcessor.create_attachment(attachment_id, status="downloading", type=attachment_type, registeredPlatforms=registeredPlatforms)
             attachment = response.content
             attachment_path = f"{pathlib.Path(__file__).parent.resolve()}/TMP_attachments/{attachment_id}.{attachment_type}"
+            if '../' in attachment_path or '..\\' in attachment_path:
+                raise Exception("Invalid file path")
             with open(attachment_path, 'wb') as file:
                 file.write(attachment)
                 file.close()
