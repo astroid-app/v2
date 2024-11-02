@@ -227,6 +227,8 @@ class SendingHandler():
                     nerimityCdnFileId = None
                     if attachments is not None:
                         formdata = aiohttp.FormData()
+                        if '../' in attachments[0].name or '..\\' in attachments[0].name:
+                            raise Exception("Invalid file path")
                         formdata.add_field("f", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
                         async with session.post("https://cdn.nerimity.com/upload", headers=headers, data=formdata) as r:
                             if r.ok:
