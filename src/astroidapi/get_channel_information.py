@@ -85,9 +85,3 @@ class GetChannelName:
         except:
             traceback.print_exc()
             return None
-
-
-print(asyncio.run(GetChannelName.from_discord_id(1045437428896378945)))
-print(asyncio.run(GetChannelName.from_guilded_id("76a72d86-0b13-4015-94d7-dcb9c84aa5e8")))
-print(asyncio.run(GetChannelName.from_revolt_id("01H6BZ13N7ZYY9FRXYM8FBD57G")))
-print(asyncio.run(GetChannelName.from_nerimity_id(1528027692996403200)))

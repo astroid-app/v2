@@ -8,6 +8,7 @@ import fastapi
 import astroidapi.sending_handler as sending_handler
 import astroidapi.surrealdb_handler as surrealdb_handler
 from Bot import config
+import astroidapi.health_check as health_check
 
 class UpdateHandler:
 
@@ -186,13 +187,25 @@ class UpdateHandler:
                                         endpoint_data["config"]["allowed-ids"].append(allowed_ids)
                         
                         if message_reply:
-                            endpoint_data["meta"]["message"]["isReply"] = message_reply
+                            try:
+                                endpoint_data["meta"]["message"]["isReply"] = message_reply
+                            except:
+                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
+                                endpoint_data["meta"]["message"]["isReply"] = message_reply
                         
                         if message_reply_message:
-                            endpoint_data["meta"]["message"]["reply"]["message"] = message_reply_message
+                            try:
+                                endpoint_data["meta"]["message"]["reply"]["message"] = message_reply_message
+                            except:
+                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
+                                endpoint_data["meta"]["message"]["reply"]["message"] = message_reply_message
 
                         if message_reply_author:
-                            endpoint_data["meta"]["message"]["reply"]["author"] = message_reply_author
+                            try:
+                                endpoint_data["meta"]["message"]["reply"]["author"] = message_reply_author
+                            except:
+                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
+                                endpoint_data["meta"]["message"]["reply"]["author"] = message_reply_author
 
                         if message_author_id:
                             endpoint_data["meta"]["message"]["author"]["id"] = message_author_id
@@ -259,6 +272,12 @@ class UpdateHandler:
                                             check_json["meta"]["trigger"] = False
                                             check_json["meta"]["sender"] = None
                                             check_json["meta"]["sender-channel"] = None
+                                            try:
+                                                check_json["meta"]["message"]["isReply"] = False
+                                                check_json["meta"]["message"]["reply"]["message"] = None
+                                                check_json["meta"]["message"]["reply"]["author"] = None
+                                            except:
+                                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
                                             check_json["meta"]["message"]["isReply"] = False
                                             check_json["meta"]["message"]["reply"]["message"] = None
                                             check_json["meta"]["message"]["reply"]["author"] = None
@@ -281,6 +300,12 @@ class UpdateHandler:
                                             check_json["meta"]["trigger"] = False
                                             check_json["meta"]["sender"] = None
                                             check_json["meta"]["sender-channel"] = None
+                                            try:
+                                                check_json["meta"]["message"]["isReply"] = False
+                                                check_json["meta"]["message"]["reply"]["message"] = None
+                                                check_json["meta"]["message"]["reply"]["author"] = None
+                                            except:
+                                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
                                             check_json["meta"]["message"]["isReply"] = False
                                             check_json["meta"]["message"]["reply"]["message"] = None
                                             check_json["meta"]["message"]["reply"]["author"] = None
