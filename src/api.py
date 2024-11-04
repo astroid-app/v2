@@ -290,15 +290,18 @@ async def get_bridges(endpoint: int,
                 bridges_discord = []
                 bridges_guilded = []
                 bridges_revolt = []
+                bridges_nerimity = []
                 for bridge in bridges_json["config"]["channels"]["discord"]:
                     bridges_discord.append(bridge)
                 for bridge in bridges_json["config"]["channels"]["revolt"]:
                     bridges_revolt.append(bridge)
                 for bridge in bridges_json["config"]["channels"]["guilded"]:
                     bridges_guilded.append(bridge)
+                for bridge in bridges_json["config"]["channels"]["nerimity"]:
+                    bridges_nerimity.append(bridge)
 
                 return fastapi.responses.JSONResponse(
-                    {"discord": bridges_discord, "guilded": bridges_guilded, "revolt": bridges_revolt}, status_code=200)
+                    {"discord": bridges_discord, "guilded": bridges_guilded, "revolt": bridges_revolt, "nerimity": bridges_nerimity}, status_code=200)
             except FileNotFoundError:
                 return fastapi.responses.JSONResponse(status_code=404,
                                                       content={"message": "This endpoint does not exist."})
