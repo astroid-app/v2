@@ -782,6 +782,30 @@ async def get_channel_name(platform: str, id: str, token: Annotated[str, fastapi
     except:
         return fastapi.responses.JSONResponse(status_code=404, content={"message": "This channel does not exist."})
 
+
+@api.get("/contribution/contributors", description="Get contributors that worked on Astroid.")
+async def get_contributors():
+    return await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributors()
+
+@api.get("/contribution/contributor", description="Get a contributor that worked on Astroid.")
+async def get_contributor(name: str = None, id: int = None):
+    if name and not id:
+        return await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributor_by_username(name)
+    elif id and not name:
+        return await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributor(id)
+    elif id and name:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You can only provide either a name or an id."})
+    else:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You must provide a name or an id."})
+
+@api.post("/contribution/addcontributor/{id}", description="Add a contributor that worked on Astroid.")
+async def add_contributor(id: int, username: str = None, avatar: str = None, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    if token == Bot.config.MASTER_TOKEN:
+        return await astroidapi.surrealdb_handler.Contributions.Contributors.create_contributor(id, username, avatar)
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+    
+
 logging.info("[CORE] API started.")
 
 uvicorn.run(api, host="localhost", port=9921)

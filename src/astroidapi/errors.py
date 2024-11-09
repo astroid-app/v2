@@ -228,6 +228,21 @@ class SurrealDBHandler:
             self.message = message
             super().__init__(self.message)
     
+    class GetContributorError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class GetContributorsError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class CreateContributorError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
 
 class ReadHandlerError:
 

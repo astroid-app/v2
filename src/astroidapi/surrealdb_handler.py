@@ -458,4 +458,65 @@ class Suspension:
                     return True
             except Exception as e:
                 raise errors.SurrealDBHandler.SuspensionHandlerError(e)
-            
+
+
+class Contributions:
+
+    class Contributors:
+
+        @classmethod
+        async def get_contributors(cls):
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.CONTRIBUTIONS_DATABASE)
+                    return await db.select("contributors")
+            except Exception as e:
+                raise errors.SurrealDBHandler.GetContributorsError(e)
+        
+        @classmethod
+        async def get_contributor(cls, contributor_id: int):
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.CONTRIBUTIONS_DATABASE)
+                    return await db.select(f"contributors:`{contributor_id}`")
+            except Exception as e:
+                raise errors.SurrealDBHandler.GetContributorError(e)
+        
+        @classmethod
+        async def get_contributor_by_username(cls, username: str):
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.CONTRIBUTIONS_DATABASE)
+                    data = await db.select("contributors")
+                    print(data)
+                    for contributor in data:
+                        if contributor["username"] == username:
+                            return contributor
+            except Exception as e:
+                raise errors.SurrealDBHandler.GetContributorError(e)
+        
+        @classmethod
+        async def create_contributor(cls, userid: int, username: str = None, avatar: str = None):
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.CONTRIBUTIONS_DATABASE)
+                    contributors = await db.select("contributors")
+                    for contributor in contributors:
+                        if str(contributor["id"]).replace("contributors:⟨", "").replace("⟩", "")== str(userid):
+                            await db.update(f"contributors:⟨{userid}⟩", {
+                                "username": username,
+                                "avatar": avatar
+                            })
+                            return await db.select(f"contributors:⟨{userid}⟩")
+                    await db.create(f"contributors:⟨{userid}⟩`", {
+                        "username": username,
+                        "avatar": avatar,
+                        "contributor_since": datetime.datetime.now().timestamp(),
+                    })
+                    return await db.select(f"contributions:⟨{userid}⟩")
+            except Exception as e:
+                raise errors.SurrealDBHandler.CreateContributorError(e)

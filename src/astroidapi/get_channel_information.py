@@ -1,5 +1,4 @@
 from Bot import config
-from astroidapi import beta_config
 import aiohttp
 import asyncio
 import traceback
@@ -21,7 +20,7 @@ class GetChannelName:
             try:
                 async with aiohttp.ClientSession() as session:
                     headers = {
-                        "Authorization": f"Bot {beta_config.DISCORD_TOKEN}"
+                        "Authorization": f"Bot {config.DISCORD_TOKEN}"
                     }
                     async with session.get(f"https://discord.com/api/v9/channels/{channel_id}", headers=headers) as resp:
                         data = await resp.json()
@@ -46,7 +45,7 @@ class GetChannelName:
             try:
                 async with aiohttp.ClientSession() as session:
                     headers = {
-                        "Authorization": f"Bearer {beta_config.GUILDED_TOKEN}"
+                        "Authorization": f"Bearer {config.GUILDED_TOKEN}"
                     }
                     async with session.get(f"https://www.guilded.gg/api/v1/channels/{channel_id}", headers=headers) as resp:
                         print(await resp.text())
