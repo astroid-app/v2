@@ -64,7 +64,7 @@ async def on_ready():
 async def on_message_delete(message: guilded.Message):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}&token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://api.astroid.cc/getendpoint/guilded?id={message.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 endpoint = data["discord"]
     except:
@@ -72,7 +72,7 @@ async def on_message_delete(message: guilded.Message):
         return
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 if data["config"]["isbeta"]:
                     return
@@ -84,7 +84,7 @@ async def on_message_delete(message: guilded.Message):
         traceback.print_exc()
 
     channels_url = (
-        f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
+        f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}"
     )
     channels_data = await fetch_json(channels_url)
 
@@ -100,7 +100,7 @@ async def on_message_delete(message: guilded.Message):
         )
 
         logs_url = (
-            f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
+            f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}"
         )
         logs_data = await fetch_json(logs_url)
 
@@ -112,7 +112,7 @@ async def on_message_delete(message: guilded.Message):
 async def on_message_edit(before: guilded.Message, after: guilded.Message):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={before.server_id}&token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://api.astroid.cc/getendpoint/guilded?id={before.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 endpoint = data["discord"]
     except:
@@ -120,7 +120,7 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
         return
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 if data["config"]["isbeta"]:
                     return
@@ -132,7 +132,7 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
         traceback.print_exc()
 
     channels_url = (
-        f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
+        f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}"
     )
     channels_data = await fetch_json(channels_url)
 
@@ -147,7 +147,7 @@ async def on_message_edit(before: guilded.Message, after: guilded.Message):
         embed.add_field(name="After", value=after.content, inline=False)
 
         logs_url = (
-            f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
+            f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}"
         )
         logs_data = await fetch_json(logs_url)
 
@@ -161,7 +161,7 @@ async def register(ctx: commands.Context, endpoint):
         await ctx.send("Invalid Format: `a!register DISCORD_SERVER_ID`")
     else:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://api.astroid.cc/getendpoint/guilded?id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 try:
                     _endpoint = data["discord"]
@@ -172,23 +172,23 @@ async def register(ctx: commands.Context, endpoint):
                         await ctx.send("This server is registered with another endpoint. For further assistance, please contact the support server.")
                 except KeyError:
                     async with aiohttp.ClientSession() as session: 
-                        async with session.post(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                        async with session.post(f"https://api.astroid.cc/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
-                                await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
+                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
                             else:
                                 await ctx.send(f"Oops, something went wrong: `{data['message']}`")
                 except IndexError:
                     async with aiohttp.ClientSession() as session: 
-                        async with session.post(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                        async with session.post(f"https://api.astroid.cc/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
-                                await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
+                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
                             else:
                                 await ctx.send(f"Oops, something went wrong: `{data['message']}`")
                 except TypeError:
                     async with aiohttp.ClientSession() as session: 
-                        async with session.post(f"https://astroid.deutscher775.de/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
+                        async with session.post(f"https://api.astroid.cc/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
-                                await ctx.send(f"Registered endpoint: https://astroid.deutscher775.de/{endpoint}")
+                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
                             else:
                                 await ctx.send(f"Oops, something went wrong: `{data['message']}`")
                 except Exception as e:
@@ -199,10 +199,10 @@ async def register(ctx: commands.Context, endpoint):
         channel_webhook = await ctx.channel.create_webhook(name="astroid")
         channel_webhook_url = channel_webhook.url
         async with aiohttp.ClientSession() as session:
-            async with session.post(f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
+            async with session.post(f"https://api.astroid.cc/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 if response.ok:
-                    await ctx.send(f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}")
+                    await ctx.send(f"Updated endpoint: https://api.astroid.cc/{endpoint}")
                 else:
                     await ctx.send(f"Oops, something went wrong: `{data['message']}`")
     except Exception as e:
@@ -211,7 +211,7 @@ async def register(ctx: commands.Context, endpoint):
 @client.command()
 async def help(ctx):
     embed = guilded.Embed(
-        title="astroid", description="API Docs: https://astroid.deutscher775.de/docs"
+        title="astroid", description="API Docs: https://api.astroid.cc/docs"
     )
     embed.add_field(
         name="register",
@@ -244,12 +244,12 @@ async def set_log(ctx, endpoint, channelid):
         )
     else:
         r = await post_json(
-            f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={ctx.channel.id}&log_guilded={channelid}&token={config.MASTER_TOKEN}",
+            f"https://api.astroid.cc/update/{endpoint}?channel_guilded={ctx.channel.id}&log_guilded={channelid}&token={config.MASTER_TOKEN}",
             {},
         )
         if r.ok:
             await ctx.send(
-                f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}"
+                f"Updated endpoint: https://api.astroid.cc/{endpoint}"
             )
         else:
             await ctx.send(f"{r['message']}")
@@ -261,12 +261,12 @@ async def allow(ctx, endpoint, allowid):
         await ctx.send("Invalid Format: `a!allow DISCORD_SERVER_ID GUILDED_USER_ID`")
     else:
         r = await post_json(
-            f"https://astroid.deutscher775.de/update/{endpoint}?allowed_ids={allowid}&token={config.MASTER_TOKEN}",
+            f"https://api.astroid.cc/update/{endpoint}?allowed_ids={allowid}&token={config.MASTER_TOKEN}",
             {},
         )
         if r.ok:
             await ctx.send(
-                f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}"
+                f"Updated endpoint: https://api.astroid.cc/{endpoint}"
             )
         else:
             await ctx.send(f"{r['message']}")
@@ -279,12 +279,12 @@ async def add_bridge(ctx, endpoint):
     else:
         webhook = await ctx.channel.create_webhook(name="astroid")
         r = await post_json(
-            f"https://astroid.deutscher775.de/update/{endpoint}?channel_guilded={ctx.channel.id}&webhook_guilded={webhook.url}&token={config.MASTER_TOKEN}",
+            f"https://api.astroid.cc/update/{endpoint}?channel_guilded={ctx.channel.id}&webhook_guilded={webhook.url}&token={config.MASTER_TOKEN}",
             {},
         )
         if r.ok:
             await ctx.send(
-                f"Updated endpoint: https://astroid.deutscher775.de/{endpoint}"
+                f"Updated endpoint: https://api.astroid.cc/{endpoint}"
             )
         else:
             await ctx.send(f"{r['message']}")
@@ -305,12 +305,12 @@ async def send_embed(ctx):
 async def on_message(message: guilded.Message):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://astroid.deutscher775.de/getendpoint/guilded?id={message.server_id}&token={config.MASTER_TOKEN}") as response:
+            async with session.get(f"https://api.astroid.cc/getendpoint/guilded?id={message.server_id}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 endpoint = data["discord"]
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}") as response:
+                async with session.get(f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}") as response:
                     data = await response.json()
                     if data["config"]["isbeta"]:
                         return
@@ -325,7 +325,7 @@ async def on_message(message: guilded.Message):
         await client.process_commands(message)
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                f"https://astroid.deutscher775.de/{endpoint}?token={config.MASTER_TOKEN}"
+                f"https://api.astroid.cc/{endpoint}?token={config.MASTER_TOKEN}"
             ) as response:
                 data = await response.json()
                 if message.channel.id in data["config"]["channels"]["guilded"]:
@@ -345,7 +345,7 @@ async def on_message(message: guilded.Message):
                     if not message.author.bot or message.author.id in allowed_ids:
                         if not message.attachments and not message.embeds:
                             async with session.post(
-                                f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}"
+                                f"https://api.astroid.cc/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://api.astroid.cc/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}"
                             ) as response:
                                 pass
                         elif message.embeds:
@@ -360,7 +360,7 @@ async def on_message(message: guilded.Message):
                         elif message.attachments:
                             if len(message.attachments) == 1:
                                 async with session.post(
-                                    f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}"
+                                    f"https://api.astroid.cc/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://api.astroid.cc/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={message.attachments[0].url.replace('![]', '').replace('(', '').replace(')', '')}"
                                 ) as response:
                                     pass
                         else:
@@ -372,7 +372,7 @@ async def on_message(message: guilded.Message):
                                     .replace(")", "")
                                 )
                             async with session.post(
-                                f"https://astroid.deutscher775.de/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://astroid.deutscher775.de/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}"
+                                f"https://api.astroid.cc/update/{endpoint}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url if message.author.avatar.url else 'https://api.astroid.cc/assets/Astroid PFP not found.png'}&message_author_id={message.author.id}&trigger=true&sender=guilded&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}&message_attachments={attachments[:-1]}"
                             ) as response:
                                 pass
     except FileNotFoundError:
