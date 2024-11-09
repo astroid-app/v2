@@ -560,11 +560,17 @@ async def create_endpoint(endpoint: int):
                     "nerimity": False
                 },
                 "message": {
+                    "isReply": False,
+                        "reply": {
+                            "message": None,
+                            "author": None
+                        },
                     "author": {
                         "name": None,
                         "avatar": None,
                         "id": None
                     },
+
                     "content": None,
                     "attachments": []
                 }
