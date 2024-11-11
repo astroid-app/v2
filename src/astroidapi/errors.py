@@ -243,6 +243,11 @@ class SurrealDBHandler:
             self.message = message
             super().__init__(self.message)
     
+    class GetMessageCacheError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
 
 class ReadHandlerError:
 

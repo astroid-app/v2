@@ -33,6 +33,7 @@ writes = {
         "isbeta": "config.isbeta"
     },
     "meta": {
+        "_message_cache": "meta.`_message_cache`",
         "sender-channel": "meta.`sender-channel`",
         "trigger": "meta.trigger",
         "sender": "meta.sender",
@@ -107,6 +108,7 @@ class HealthCheck:
                     "isbeta": False
                 },
                 "meta": {
+                    "_message_cache": None,
                     "sender-channel": None,
                     "trigger": False,
                     "sender": None,
@@ -176,6 +178,7 @@ class HealthCheck:
                     "isbeta": False
                 },
                 "meta": {
+                    "_message_cache": [],
                     "sender-channel": "NULL",
                     "trigger": False,
                     "sender": "NULL",
@@ -342,6 +345,12 @@ class HealthCheck:
                     summary.append("✘ IsBeta not found. Adding...")
                 await asyncio.sleep(0.1)
                 try:
+                    message_cache = endpoint_data["meta"]["_message_cache"]
+                    summary.append("✔ Message Cache found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["meta"]["_message_cache"], healthy_endpoint_data["meta"]["_message_cache"])
+                    summary.append("✘ Message Cache not found. Adding...")
+                try:
                     sender_channel = endpoint_data["meta"]["sender-channel"]
                     summary.append("✔ Meta - Sender Channel found")
                 except KeyError:
@@ -477,5 +486,25 @@ class HealthCheck:
                 return summary
             except IndexError as e:
                 raise errors.HealtCheckError.EndpointCheckError(e)
+        
+        @classmethod
+        async def daily_check(cls):
+            endpoints = await surrealdb_handler.get_all_endpoints()
+            summary = []
+            total_endpoints = len(endpoints)
+            for endpoint in endpoints:
+                print(f"[API - Healthcheck - Daily Endpoint Check] Checking {endpoint} | {endpoints.index(endpoint) + 1}/{total_endpoints}")
+                try:
+                    ishealthy = await cls.check(endpoint)
+                    if ishealthy:
+                        summary.append(f"{endpoint} | Healthy")
+                except:
+                    summary_line = ""
+                    endpoint_summary = await cls.repair_structure(endpoint)
+                    for line in endpoint_summary:
+                        summary_line += f"{line} | "
+                    summary.append(f"{endpoint} | {summary_line}")
+                await asyncio.sleep(0.4)
+            return summary
 
 # asyncio.run(HealthCheck.EndpointCheck.repair_structure(1))

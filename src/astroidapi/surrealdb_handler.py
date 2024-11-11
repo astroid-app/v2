@@ -520,3 +520,16 @@ class Contributions:
                     return await db.select(f"contributions:⟨{userid}⟩")
             except Exception as e:
                 raise errors.SurrealDBHandler.CreateContributorError(e)
+
+
+class MessageCache:
+    
+        @classmethod
+        async def get_messages(cls):
+            try:
+                async with Surreal(config.SDB_URL) as db:
+                    await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                    await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                    return await db.select("message_cache")
+            except Exception as e:
+                raise errors.SurrealDBHandler.GetMessageCacheError(e)

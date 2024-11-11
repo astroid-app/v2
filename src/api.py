@@ -333,6 +333,34 @@ async def new_token(endpoint: int,
     else:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "The provided token is invalid."})
 
+
+@api.patch("/daily_endpoint_check", description="Check all endpoints for their health. (Master token required)")
+async def daily_endpoint_check(master_token: Annotated[str, fastapi.Query(max_length=85, min_length=85)]):
+    if master_token == Bot.config.MASTER_TOKEN:
+        try:
+            summary = await astroidapi.health_check.HealthCheck.EndpointCheck.daily_check()
+            random_token = secrets.token_urlsafe(53)
+            txt_file = open(f"{pathlib.Path(__file__).parent.resolve()}/healtcheck_summaries/{random_token}.txt", "w", encoding="utf-8")
+            for line in summary:
+                txt_file.write(line + "\n")
+            txt_file.close()
+            requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - Daily Endpoint Check] {len(summary)} endpoints checked. Summary: https://api.astroid.cc/healtcheck_summaries/{random_token}"})
+            return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
+        except Exception as e:
+            logging.exception(traceback.print_exc())
+            return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+@api.get("/healtcheck_summaries/{token}")
+def get_summary(token: str):
+    try:
+        with open(f"{pathlib.Path(__file__).parent.resolve()}/healtcheck_summaries/{token}.txt", "r") as file:
+            return fastapi.responses.PlainTextResponse(status_code=200, content=file.read())
+    except FileNotFoundError:
+        return fastapi.responses.JSONResponse(status_code=404, content={"message": "This summary does not exist."})
+
+
 @api.delete("/tempattachments", description="Clear the temporary attachments.")
 async def clear_temporary_attachments(master_token: Annotated[str, fastapi.Query(max_length=85, min_length=85)]):
     if master_token == Bot.config.MASTER_TOKEN:
@@ -793,6 +821,19 @@ async def get_contributor(name: str = None, id: int = None):
         return await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributor_by_username(name)
     elif id and not name:
         return await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributor(id)
+    elif id and name:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You can only provide either a name or an id."})
+    else:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You must provide a name or an id."})
+
+@api.get("/contribution/contributor/avatar", description="Get contributions that were made to Astroid.")
+async def get_contributor_avatar(name: str = None, id: int = None):
+    if name and not id:
+        data = await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributor_by_username(name)
+        return data["avatar"]
+    elif id and not name:
+        data = await astroidapi.surrealdb_handler.Contributions.Contributors.get_contributor(id)
+        return data["avatar"]
     elif id and name:
         return fastapi.responses.JSONResponse(status_code=400, content={"message": "You can only provide either a name or an id."})
     else:
