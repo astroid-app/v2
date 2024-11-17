@@ -7,3 +7,7 @@ class Format:
         username = re.sub(r"[^\w\s]", "", username)
         username = re.sub(r"^[+\s]+|[+\s]+$", "", username)
         return username
+    
+    @classmethod
+    def format_urlsafe(cls, message: str):
+        message = message.replace("?", "%3F").replace("&", "%26")

@@ -415,6 +415,8 @@ async def post_endpoint(
     if suspend_status:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
     
+    message_content = astroidapi.formatter.Format.format_urlsafe(message_content)
+    
     await astroidapi.endpoint_update_handler.UpdateHandler.update_endpoint(
         endpoint=endpoint,
         index=index,
