@@ -11,3 +11,7 @@ class Format:
     @classmethod
     def format_urlsafe(cls, message: str):
         message = message.replace("?", "%3F").replace("&", "%26")
+    
+    @classmethod
+    def unformat_urlsafe(cls, message: str):
+        message = message.replace("%3F", "?").replace("%26", "&")
