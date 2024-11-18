@@ -51,9 +51,10 @@ class SendingHandler():
     @classmethod
     async def send_from_discord(cls, updated_json, endpoint, attachments: list = None):
         try:
-            asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
             asyncio.create_task(cls.send_to_guilded(updated_json, endpoint, attachments))
             asyncio.create_task(cls.send_to_nerimity(updated_json, endpoint, attachments))
+            if updated_json["config"]["isbeta"] is True:
+                asyncio.create_task(cls.send_to_revolt(updated_json, endpoint, attachments))
         except Exception as e:
             raise errors.SendingError.SendFromDiscordError(e)
 
@@ -257,41 +258,34 @@ class SendingHandler():
     
     @classmethod
     async def send_to_revolt(cls, updated_json, endpoint, attachments: list = None):
-        return True
-        #if updated_json["meta"]["read"]["revolt"] is False:
-        #    if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
-        #        channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
-        #    elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["guilded"]:
-        #        channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
-        #    elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
-        #        channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
-        #    else:
-        #        raise errors.SendingError.ChannelNotFound(f"The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.")
-        #    
-        #    headers = {
-        #        "Authorization" : f"Bot {config.REVOLT_TOKEN}"
-        #    }
-        #    url = f"https://api.revolt.chat/channels/{channel_id}/messages"
-        #    payload = {
-        #        "attachments": [None],
-        #        "masquerade": {
-        #            "avatar": updated_json["meta"]["message"]["author"]["avatar"],
-        #            "name": updated_json["meta"]["message"]["author"]["name"]
-        #        
-        #        },
-        #        "replies": [
-        #            {
-        #                "id": "",
-        #                "mention": True
-        #            }
-        #        ],
-        #        "embeds": [{}]
-        #    }
-        #    async with aiohttp.ClientSession() as session:
-        #        async with session.post(url, headers=headers, json=payload) as r:
-        #            await session.post(f"https://astroid.deutscher775.de/read/{endpoint}?token={config.MASTER_TOKEN}&read_revolt=true")
-        #            await session.close()
-        #        return True
-        #else:
-        #    return False
+        if updated_json["meta"]["read"]["revolt"] is False:
+            if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
+                channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
+            elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["guilded"]:
+                channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
+            elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
+                channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
+            else:
+                raise errors.SendingError.ChannelNotFound(f"The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.")
+            
+            headers = {
+                "X-Bot-Token": f"{config.REVOLT_TOKEN}"
+            }
+            url = f"https://api.revolt.chat/channels/{channel_id}/messages"
+            payload = {
+                "masquerade": {
+                    "avatar": updated_json["meta"]["message"]["author"]["avatar"],
+                    "name": updated_json["meta"]["message"]["author"]["name"]
+                },
+                "content": updated_json["meta"]["message"]["content"]
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as r:
+                    print(f"Sent to revolt. Response: {r.status}, {r.reason} {await r.text()}")
+                    asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "revolt"))
+                    await session.close()
+                return True
+        else:
+            return False
             

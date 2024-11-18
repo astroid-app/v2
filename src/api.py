@@ -147,6 +147,8 @@ def invite(platform: str, token: Annotated[str, fastapi.Query(max_length=85)] = 
         return fastapi.responses.RedirectResponse(status_code=301, url="https://discord.com/oauth2/authorize?client_id=1230579871059804280&permissions=138046467089&scope=applications.commands+bot")
     elif platform == "guilded-beta" and token in beta_users.TOKENS:
         return fastapi.responses.RedirectResponse(status_code=301, url="https://www.guilded.gg/b/3f887186-82d5-4fe1-abbd-045748b125b3")
+    elif platform == "revolt-beta" and token in beta_users.TOKENS:
+        return fastapi.responses.RedirectResponse(status_code=301, url="https://app.revolt.chat/bot/01HZH72H3PZKTEG1ADQ5P2XBF5")
     else:
         return fastapi.responses.JSONResponse(status_code=400, content={"message": "Invalid platform."})
 
