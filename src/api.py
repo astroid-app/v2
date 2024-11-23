@@ -418,7 +418,19 @@ async def post_endpoint(
     suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
     if suspend_status:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
-    
+
+    if not token:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
+    try:
+        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+        if token != data_token and token != Bot.config.MASTER_TOKEN:
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+    except KeyError:
+        if token != Bot.config.MASTER_TOKEN:
+            return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+        else:
+            pass
+            
     await astroidapi.endpoint_update_handler.UpdateHandler.update_endpoint(
         endpoint=endpoint,
         index=index,
