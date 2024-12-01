@@ -49,9 +49,9 @@ writes = {
             "type_reply": "meta.message.reply",
             "isReply": "meta.message.isReply",
             "reply": {
-            "message": "meta.message.reply.message",
-            "author": "meta.message.reply.author"
-        },
+                "message": "meta.message.reply.message",
+                "author": "meta.message.reply.author"
+            },
             "type_author": "meta.message.author",
             "author": {
                 "name": "meta.message.author.name",
@@ -108,7 +108,7 @@ class HealthCheck:
                     "isbeta": False
                 },
                 "meta": {
-                    "_message_cache": None,
+                    "_message_cache": [],
                     "sender-channel": None,
                     "trigger": False,
                     "sender": None,

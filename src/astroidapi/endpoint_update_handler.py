@@ -7,6 +7,7 @@ import traceback
 import fastapi
 import astroidapi.sending_handler as sending_handler
 import astroidapi.surrealdb_handler as surrealdb_handler
+import astroidapi.queue_processor as queue_processor
 from Bot import config
 import astroidapi.health_check as health_check
 
@@ -254,8 +255,7 @@ class UpdateHandler:
                         finally:
                             if not updated_json["config"]["self-user"] is True:                   
                                 if updated_json["meta"]["trigger"]:
-                                    asyncio.create_task(sending_handler.SendingHandler.distribute(endpoint, updated_json))
-                                    print("Distributed")
+                                    asyncio.create_task(queue_processor.QueueProcessor.handleUpdatedEndpointData(endpoint, updated_json))
                                     waiting_secs = 0
                                     max_secs = 10
                                     while True:

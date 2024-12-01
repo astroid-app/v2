@@ -159,6 +159,80 @@ async def write_to_structure(endpoint, key, value):
         raise errors.SurrealDBHandler.UpdateEndpointError(e)
 
 
+class QueueHandler:
+    @classmethod
+    async def get_queue(cls, endpoint: int):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                data = await db.select(f"endpoints:`{endpoint}`")
+                return data["meta"]["_message_cache"]
+        except Exception as e:
+            raise errors.SurrealDBHandler.GetEndpointError(e)
+    
+    @classmethod
+    async def append_to_queue(cls, endpoint: int, message: dict):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                data = await db.select(f"endpoints:`{endpoint}`")
+                data['meta']['_message_cache'].append(message)
+                appending = json.dumps(data['meta']['_message_cache'])
+                print(appending)
+                await db.query(f"UPDATE endpoints:`{endpoint}` SET meta._message_cache = {appending}")
+                return await db.select(f"endpoints:`{endpoint}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.UpdateEndpointError(e)
+    
+    @classmethod
+    async def remove_from_queue(cls, endpoint: int, message: dict):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                data = await db.select(f"endpoints:`{endpoint}`")
+                data["meta"]["_message_cache"].remove(message)
+                if data["meta"]["_message_cache"] is None:
+                    await db.query(f"UPDATE endpoints:`{endpoint}` SET meta._message_cache = []")
+                    return await db.select(f"endpoints:`{endpoint}`")
+                await db.query(f"UPDATE endpoints:`{endpoint}` SET meta._message_cache = {json.dumps(data['meta']['_message_cache'])}")
+                return await db.select(f"endpoints:`{endpoint}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.UpdateEndpointError(e)
+    
+    @classmethod
+    async def clear_queue(cls, endpoint: int):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                await db.query(f"UPDATE endpoints:`{endpoint}` SET meta._message_cache = []")
+                return await db.select(f"endpoints:`{endpoint}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.UpdateEndpointError(e)
+    
+    @classmethod
+    async def loadMessage(cls, endpoint: int, message: dict):
+        try:
+            async with Surreal(config.SDB_URL) as db:
+                await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+                await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+                data = await db.select(f"endpoints:`{endpoint}`")
+                print(message["sender"])
+                print(message["sender-channel"])
+                first = await db.query(f"UPDATE endpoints:`{endpoint}` SET meta.sender = '{message['sender']}'")
+                print(f"First: {first}")
+                second = await db.query(f"UPDATE endpoints:`{endpoint}` SET meta.`sender-channel` = '{message['sender-channel']}'")
+                last = await db.query(f"UPDATE endpoints:`{endpoint}` SET meta.message = {message}")
+                await cls.remove_from_queue(endpoint, message)
+                return await db.select(f"endpoints:`{endpoint}`")
+        except Exception as e:
+            raise errors.SurrealDBHandler.GetEndpointError(e)
+
+
+
 class AttachmentProcessor:
 
     @classmethod
