@@ -9,7 +9,6 @@ class Role():
 
     id: Snowflake ID of the role.
     name: The name of the role.
-    permissions: Integer that represents the permissions of the role.
 
     update_role(): Updates itself with the specified information.
 
@@ -19,7 +18,6 @@ class Role():
     def __init__(self) -> None:
         self.id          : int          = None
         self.name        : str          = None
-        self.permissions : int          = None
         self.hex_color   : str          = None
         self.creator_id  : int          = None
         self.server_id   : int          = None
@@ -29,7 +27,7 @@ class Role():
         self.created_at  : float        = None
 
     # Public: Updates itself with the specified information.
-    def update_role(self, server_id: int, name: str=None, hex_color: str=None, hide_role: bool=None, permissions: int=None) -> None:
+    def update_role(self, server_id: int, name: str=None, hex_color: str=None, hide_role: bool=None) -> None:
         """Updates itself with the specified information."""
         
         api_endpoint = f"https://nerimity.com/api/servers/{server_id}/roles/{self.id}"
@@ -42,7 +40,6 @@ class Role():
             "name": name,
             "hexColor": hex_color,
             "hideRole": hide_role,
-            "permissions": permissions
         }
 
         response = requests.post(api_endpoint, headers=headers, data=json.dumps(data))
@@ -58,7 +55,6 @@ class Role():
         new_role = Role()
         new_role.id          = int(json["id"])
         new_role.name        = str(json["name"])
-        new_role.permissions = int(json["permissions"])     if json["permissions"] is not None else 0
         new_role.hex_color   = str(json["hexColor"])
         new_role.creator_id  = int(json["createdById"])
         new_role.server_id   = int(json["serverId"])

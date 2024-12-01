@@ -1,4 +1,4 @@
-from nerimity._enums import GlobalClientInformation, Colors, ChannelPermissions, RolePermissions, ChannelTypes, PresenceTypes, BadgeTypes, AttachmentTypes
+from nerimity._enums import GlobalClientInformation, Colors, ChannelTypes, PresenceTypes, BadgeTypes, AttachmentTypes
 from nerimity.attachment import Attachment
 from nerimity.channel import Channel
 from nerimity.client import Client

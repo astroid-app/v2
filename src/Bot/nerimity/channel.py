@@ -11,7 +11,6 @@ class Channel():
 
     id: Snowflake ID of the channel
     name: Name of the channel.
-    permissions: Integer that represents the permissions of the channel.
     type: Type of the channel
     creator_id: ID of the creator of the channel.
     server_id: ID of the server the channel is in.
@@ -30,7 +29,6 @@ class Channel():
     def __init__(self) -> None:
         self.id               : int             = None
         self.name             : str             = None
-        self.permissions      : int             = None
         self.type             : int             = None
         self.creator_id       : int             = None
         self.server_id        : int             = None
@@ -40,7 +38,7 @@ class Channel():
         self.order            : int | None      = None
     
     # Public: Updates itself with specified information.
-    def update_channel(self, server_id: int, permissions: int=None, name: str=None, icon: str=None, content: str=None) -> None:
+    def update_channel(self, server_id: int, name: str=None, icon: str=None, content: str=None) -> None:
         """Updates itself with specified information."""
 
         api_endpoint = f"https://nerimity.com/api/servers/{server_id}/channels/{self.id}"
@@ -50,7 +48,6 @@ class Channel():
             "Content-Type": "application/json",
         }
         data = {
-            "permissions": permissions,
             "name": name,
             "icon": icon,
         }
@@ -157,7 +154,6 @@ class Channel():
         new_channel = Channel()
         new_channel.id                  = int(json["id"])
         new_channel.name                = str(json["name"])
-        new_channel.permissions         = int(json["permissions"])      if json["permissions"]    is not None else 0
         new_channel.type                = int(json["type"])
         new_channel.creator_id          = int(json["createdById"])      if json["createdById"]    is not None else 0
         new_channel.server_id           = int(json["serverId"])         if json["serverId"]       is not None else 0

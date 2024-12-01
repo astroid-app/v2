@@ -1,5 +1,5 @@
 from nerimity.message import Message
-from nerimity._enums import GlobalClientInformation, ConsoleShortcuts, RolePermissions
+from nerimity._enums import GlobalClientInformation, ConsoleShortcuts
 from nerimity.context import Context
 from nerimity.channel import Channel
 from nerimity.member import Member, ServerMember, ClientMember
@@ -73,14 +73,13 @@ class Client:
         GlobalClientInformation.TOKEN = token
 
     # Public: Decorator to register a prefixed command.
-    def command(self, name: str = None, aliases: list[str] = None, permissions: int = RolePermissions.SEND_MESSAGES) -> None:
+    def command(self, name: str = None, aliases: list[str] = None) -> None:
         """Decorator to register a prefixed command."""
 
         def decorator(func):
             command_name = name if name is not None else func.__name__
             self.commands[command_name] = func
 
-            func.permissions = permissions
 
             if aliases is not None:
                 if not isinstance(aliases, list):
@@ -156,10 +155,6 @@ class Client:
         if command in self.commands:
             ctx = Context(message)
 
-            if ctx.author.has_permission(self.commands[command].permissions) == False:
-                print(f"{ConsoleShortcuts.ok()} {ctx.author.username}#{ctx.author.tag} attempted to run a command that required permissions they did not have.")
-                ctx.respond("You do not have the required permissions to execute this command.")
-                return
 
             arguments = message.content.split(' ')[1:]
             parsed_arguments = []

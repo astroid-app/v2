@@ -20,20 +20,6 @@ class Colors():
     CYAN = "\u001b[36m"
     WHITE = "\u001b[37m"
 
-class ChannelPermissions():
-    PRIVATE_CHANNEL = 1
-    SEND_MESSAGES = 2
-    JOIN_VOICE = 4
-
-class RolePermissions():
-    ADMINISTRATOR = 1
-    SEND_MESSAGES = 2
-    MANAGE_ROLES = 4
-    MANAGE_CHANNELS = 8
-    KICK_USER = 16
-    BAN_USER = 32
-    MENTION_EVERYONE = 64
-
 class ChannelTypes():
     DM_TEXT = 0
     SERVER_TEXT = 1

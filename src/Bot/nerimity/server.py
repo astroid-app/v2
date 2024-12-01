@@ -178,7 +178,7 @@ class Server():
             raise requests.RequestException
 
     # Public: Updates the specified role with new information.
-    def update_role(self, role_id: int, name: str=None, hex_color: str=None, hide_role: bool=None, permissions: int=None) -> None:
+    def update_role(self, role_id: int, name: str=None, hex_color: str=None, hide_role: bool=None) -> None:
         """Updates the specified role with new information."""
 
         api_endpoint = f"https://nerimity.com/api/servers/{self.id}/roles/{role_id}"
@@ -191,7 +191,6 @@ class Server():
             "name": name,
             "hexColor": hex_color,
             "hideRole": hide_role,
-            "permissions": permissions
         }
 
         response = requests.post(api_endpoint, headers=headers, data=json.dumps(data))
@@ -238,7 +237,7 @@ class Server():
             raise requests.RequestException
 
     # Public: Updates the specified channel with new information.
-    def update_channel(self, channel_id: int, permissions: int=None, name: str=None, icon: str=None, content: str=None) -> None:
+    def update_channel(self, channel_id: int, name: str=None, icon: str=None, content: str=None) -> None:
         """Updates the specified channel with new information."""
 
         api_endpoint = f"https://nerimity.com/api/servers/{self.id}/channels/{channel_id}"
@@ -248,7 +247,6 @@ class Server():
             "Content-Type": "application/json",
         }
         data = {
-            "permissions": permissions,
             "name": name,
             "icon": icon,
         }

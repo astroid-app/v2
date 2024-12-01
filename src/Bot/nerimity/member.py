@@ -1,4 +1,4 @@
-from nerimity._enums import GlobalClientInformation, ConsoleShortcuts, RolePermissions
+from nerimity._enums import GlobalClientInformation, ConsoleShortcuts
 from nerimity.roles import Role
 from nerimity.attachment import Attachment
 from nerimity.post import Post
@@ -151,8 +151,6 @@ class ServerMember(Member):
     kick(): Kicks the user from the server.
     ban(soft_ban): Bans the user from the server, a softban does not remove all messages send in the last 7 hours.
     unban(): Unbans the user from the server.
-    has_permission(permission): Checks if the user has the specified Permissions.
-    has_exact_permission(permission): Checks if the user has exactly the specified Permissions.
 
     deserialize(json): static | overwrite | Deserialize a json string to a ServerMember object.
     """
@@ -162,47 +160,7 @@ class ServerMember(Member):
         self.server_id : int        = None
         self.joined_at : float      = None
         self.role_ids  : list[int]  = None
-    
-    # Public: Checks if the user has the specified Permissions.
-    def has_permission(self, permission: int) -> bool:
-        """Checks if the user has the specified Permissions."""
 
-        # Check if the user is the owner
-        server_owner_id = GlobalClientInformation.SERVERS[f"{self.server_id}"].created_by_id
-        if server_owner_id == self.id:
-            return True
-
-        # Combine role permissions using bitwise OR
-        user_permissions = 0
-        for role_id in self.role_ids:
-            role = GlobalClientInformation.SERVERS[f"{self.server_id}"].roles[f"{role_id}"]
-            user_permissions |= role.permissions
-        
-        # Everyone role check
-        everyone_role_id = GlobalClientInformation.SERVERS[f"{self.server_id}"].default_role_id
-        everyone_role = GlobalClientInformation.SERVERS[f"{self.server_id}"].roles[f"{everyone_role_id}"]
-        user_permissions |= everyone_role.permissions
-        
-        if user_permissions & RolePermissions.ADMINISTRATOR:
-            return True
-        
-        # Check if role permissions and target permission match using AND
-        return (user_permissions & permission) != 0
-
-    # Public: Checks if the user has the specified Permissions.
-    def has_exact_permission(self, permission: int) -> bool:
-        """Checks if the user has exactly the specified Permissions."""
-
-        # Combine role permissions using bitwise OR
-        user_permissions = 0
-        for role_id in self.role_ids:
-            role = GlobalClientInformation.SERVERS[f"{self.server_id}"].roles[f"{role_id}"]
-            user_permissions |= role.permissions
-        
-        # Check if role permissions and target permission match using AND
-        return (user_permissions & permission) == permission
-
-    # Public: Kicks the user from the server.
     def kick(self) -> None:
         """Kicks the user from the server."""
 
