@@ -380,6 +380,7 @@ async def clear_temporary_attachments(master_token: Annotated[str, fastapi.Query
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
 
+
 @api.post("/update/{endpoint}", description="Modify an endpoint.", response_description="Endpoint with updated data.")
 async def post_endpoint(
     endpoint: int,

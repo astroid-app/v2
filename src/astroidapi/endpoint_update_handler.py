@@ -165,7 +165,6 @@ class UpdateHandler:
                         if sender:
                             if sender in ["discord", "guilded", "revolt", "nerimity"]:
                                 endpoint_data["meta"]["sender"] = sender
-                                endpoint_data["meta"]["read"][sender] = True
                             else:
                                 return fastapi.responses.JSONResponse(status_code=400, content={"message": "Invalid sender."})
 
@@ -256,67 +255,6 @@ class UpdateHandler:
                             if not updated_json["config"]["self-user"] is True:                   
                                 if updated_json["meta"]["trigger"]:
                                     asyncio.create_task(queue_processor.QueueProcessor.handleUpdatedEndpointData(endpoint, updated_json))
-                                    waiting_secs = 0
-                                    max_secs = 10
-                                    while True:
-                                        check_json = await surrealdb_handler.get_endpoint(endpoint, __file__)
-                                        if (check_json["meta"]["read"]["discord"] == True
-                                                and check_json["meta"]["read"]["guilded"] == True
-                                                and check_json["meta"]["read"]["revolt"] == True
-                                                and check_json["meta"]["read"]["nerimity"] == True):
-                                            check_json["meta"]["message"]["content"] = None
-                                            check_json["meta"]["message"]["attachments"].clear()
-                                            check_json["meta"]["message"]["author"]["avatar"] = None
-                                            check_json["meta"]["message"]["author"]["name"] = None
-                                            check_json["meta"]["message"]["author"]["id"] = None
-                                            check_json["meta"]["trigger"] = False
-                                            check_json["meta"]["sender"] = None
-                                            check_json["meta"]["sender-channel"] = None
-                                            try:
-                                                check_json["meta"]["message"]["isReply"] = False
-                                                check_json["meta"]["message"]["reply"]["message"] = None
-                                                check_json["meta"]["message"]["reply"]["author"] = None
-                                            except:
-                                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
-                                            check_json["meta"]["message"]["isReply"] = False
-                                            check_json["meta"]["message"]["reply"]["message"] = None
-                                            check_json["meta"]["message"]["reply"]["author"] = None
-                                            check_json["meta"]["read"]["discord"] = False
-                                            check_json["meta"]["read"]["guilded"] = False
-                                            check_json["meta"]["read"]["revolt"] = False
-                                            check_json["meta"]["read"]["nerimity"] = False
-                                            await surrealdb_handler.update(endpoint, check_json)
-                                            print("Everything is read. Cleared.")
-                                            break
-
-                                        await asyncio.sleep(1)
-                                        waiting_secs += 1
-                                        if waiting_secs >= max_secs:
-                                            check_json["meta"]["message"]["content"] = None
-                                            check_json["meta"]["message"]["attachments"].clear()
-                                            check_json["meta"]["message"]["author"]["avatar"] = None
-                                            check_json["meta"]["message"]["author"]["name"] = None
-                                            check_json["meta"]["message"]["author"]["id"] = None
-                                            check_json["meta"]["trigger"] = False
-                                            check_json["meta"]["sender"] = None
-                                            check_json["meta"]["sender-channel"] = None
-                                            try:
-                                                check_json["meta"]["message"]["isReply"] = False
-                                                check_json["meta"]["message"]["reply"]["message"] = None
-                                                check_json["meta"]["message"]["reply"]["author"] = None
-                                            except:
-                                                await health_check.HealthCheck.EndpointCheck.repair_structure(endpoint)
-                                            check_json["meta"]["message"]["isReply"] = False
-                                            check_json["meta"]["message"]["reply"]["message"] = None
-                                            check_json["meta"]["message"]["reply"]["author"] = None
-                                            check_json["meta"]["read"]["discord"] = False
-                                            check_json["meta"]["read"]["guilded"] = False
-                                            check_json["meta"]["read"]["revolt"] = False
-                                            check_json["meta"]["read"]["nerimity"] = False
-                                            await surrealdb_handler.update(endpoint, check_json)
-                                            print("Not everything is read. Cleared anyways.")
-                                            break
-
                                 else:
                                     return fastapi.responses.JSONResponse(
                                         status_code=200,

@@ -22,6 +22,7 @@ class SendingHandler():
         try:
             sender = updated_json["meta"]["sender"]
             registered_platforms = [platform for platform in updated_json["config"]["channels"] if len(updated_json["config"]["channels"][platform]) > 0]
+            updated_json["meta"]["read"][sender] = True
             
             if len(updated_json["meta"]["message"]["attachments"]) > 0:
                 attachments = []
