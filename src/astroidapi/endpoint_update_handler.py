@@ -8,6 +8,7 @@ import fastapi
 import astroidapi.sending_handler as sending_handler
 import astroidapi.surrealdb_handler as surrealdb_handler
 import astroidapi.queue_processor as queue_processor
+import astroidapi.formatter as formatter
 from Bot import config
 import astroidapi.health_check as health_check
 
@@ -212,12 +213,7 @@ class UpdateHandler:
 
                         if message_content:
                             if sender == "discord":
-                                if "http" in message_content or "https" in message_content:
-                                    urls = re.findall(r'(https?://\S+)', message_content)
-                                    for url in urls:
-                                        image_markdown = f"![{url}]({url})"
-                                        message_content = message_content.replace(url, image_markdown) + message_content.split(url)[1]
-                                endpoint_data["meta"]["message"]["content"] = message_content
+                                endpoint_data["meta"]["message"]["content"] = formatter.Format.format_message(message_content)
                             else:
                                 endpoint_data["meta"]["message"]["content"] = message_content
 
@@ -233,8 +229,11 @@ class UpdateHandler:
                                 endpoint_data["meta"]["message"]["attachments"] = [message_attachments]
 
                         if message_embed:
-                            embed_object = json.loads(message_embed.replace("'", '"'))
-                            endpoint_data["meta"]["message"]["embed"] = embed_object
+                            try:
+                                embed_object = json.loads(message_embed.replace("'", '"'))
+                                endpoint_data["meta"]["message"]["embed"] = embed_object
+                            except Exception as e:
+                                print("[EmbedError] An error occurred while parsing the embed object: ", e)
                         
                         if len(endpoint_data["config"]["channels"]["discord"]) == 0:
                             endpoint_data["meta"]["read"]["discord"] = True

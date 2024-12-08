@@ -166,6 +166,10 @@ class SendingHandler():
                     webhook_obj = guilded.Webhook.from_url(webhook, session=session)
                     try:
                         message_content = updated_json["meta"]["message"]["content"]
+                        try:
+                            message_content = formatter.Format.format_links_guilded_safe(message_content)
+                        except Exception as e:
+                            print("[SendToGuilded] Failed to format links: ", e)
                         if message_content is None or message_content == "" or message_content == " ":
                             if updated_json["meta"]["message"]["attachments"] is not None:
                                 message_content = "‎ "

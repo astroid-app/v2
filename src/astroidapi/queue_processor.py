@@ -115,4 +115,4 @@ class QueueProcessor:
     async def handleUpdatedEndpointData(cls, endpoint, updated_json):
         await cls.appendMessage(endpoint, updated_json)
         await cls.sendMessage(endpoint)
-        
+        return True      
