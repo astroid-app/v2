@@ -221,10 +221,7 @@ class UpdateHandler:
                             if "," in message_attachments:
                                 for val in message_attachments.split(","):
                                     if val.lower() not in [x.lower() for x in endpoint_data["meta"]["message"]["attachments"]]:
-                                        if sender == "discord":
-                                            endpoint_data["meta"]["message"]["attachments"].append(f"![]({val})")
-                                        else:
-                                            endpoint_data["meta"]["message"]["attachments"].append(val)
+                                        endpoint_data["meta"]["message"]["attachments"].append(val.lower())
                             else:
                                 endpoint_data["meta"]["message"]["attachments"] = [message_attachments]
 

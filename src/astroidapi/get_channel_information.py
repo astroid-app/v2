@@ -45,7 +45,7 @@ class GetChannelName:
             try:
                 async with aiohttp.ClientSession() as session:
                     headers = {
-                        "Authorization": f"Bearer {config.GUILDED_TOKEN}"
+                        "Authorization": f"Bearer {config.BETA_GUILDED_TOKEN}"
                     }
                     async with session.get(f"https://www.guilded.gg/api/v1/channels/{channel_id}", headers=headers) as resp:
                         print(await resp.text())
