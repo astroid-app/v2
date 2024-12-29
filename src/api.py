@@ -323,15 +323,12 @@ async def new_token(endpoint: int,
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
     
     if master_token == Bot.config.MASTER_TOKEN:
-        with open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r+") as tokens:
-            token = secrets.token_urlsafe(53)
-            data = json.load(tokens)
-            data[f"{endpoint}"] = token
-            tokens.seek(0)
-            json.dump(data, tokens)
-            tokens.truncate()
-            tokens.close()
-            return {f"token": token}
+        token = secrets.token_urlsafe(53)
+        exists = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
+        if exists:
+            await astroidapi.surrealdb_handler.TokenHandler.update_token(endpoint, token)
+        else:
+            await astroidapi.surrealdb_handler.TokenHandler.create_token(endpoint, token)
 
     else:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "The provided token is invalid."})
@@ -635,6 +632,7 @@ async def delete_endpoint(endpoint: int,
             if token == data_token or token == Bot.config.MASTER_TOKEN:
                 try:
                     await astroidapi.surrealdb_handler.delete(endpoint)
+                    await astroidapi.surrealdb_handler.TokenHandler.delete_token(endpoint)
                     return fastapi.responses.JSONResponse(status_code=200, content={"message": "Deleted."})
                 except FileNotFoundError:
                     return fastapi.responses.JSONResponse(status_code=404,
@@ -647,7 +645,8 @@ async def delete_endpoint(endpoint: int,
     except KeyError:
         if token == Bot.config.MASTER_TOKEN:
             try:
-                os.remove(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json")
+                await astroidapi.surrealdb_handler.delete(endpoint)
+                await astroidapi.surrealdb_handler.TokenHandler.delete_token(endpoint)
                 return fastapi.responses.JSONResponse(status_code=200, content={"message": "Deleted."})
             except FileNotFoundError:
                 return fastapi.responses.JSONResponse(status_code=404,
