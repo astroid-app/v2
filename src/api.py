@@ -186,7 +186,6 @@ def parameters():
 def responses():
     return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/responses.json", "r"))
 
-
 @api.get("/getserverstructure", description="Get a server structure.")
 def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     global data_token
@@ -254,7 +253,7 @@ async def get_endpoint(endpoint: int,
     
     global data_token
     try:
-        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+        data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
     except:
         data_token = None
         pass
@@ -283,7 +282,7 @@ async def get_bridges(endpoint: int,
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
     global data_token
     try:
-        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+        data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
     except:
         data_token = None
         pass
@@ -423,7 +422,7 @@ async def post_endpoint(
     if not token:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
     try:
-        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+        data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
         if token != data_token and token != Bot.config.MASTER_TOKEN:
             return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
     except KeyError:
@@ -631,7 +630,7 @@ async def create_endpoint(endpoint: int):
 async def delete_endpoint(endpoint: int,
                     token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     try:
-        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+        data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
         if token is not None:
             if token == data_token or token == Bot.config.MASTER_TOKEN:
                 try:
@@ -685,7 +684,7 @@ async def delete_enpoint_data(endpoint: int,
     if suspend_status:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
     
-    data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+    data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             try:
@@ -866,4 +865,4 @@ async def add_contributor(id: int, username: str = None, avatar: str = None, tok
 
 logging.info("[CORE] API started.")
 
-uvicorn.run(api, host="localhost", port=9921)
+uvicorn.run(api, host="localhost", port=9921, reload=False)

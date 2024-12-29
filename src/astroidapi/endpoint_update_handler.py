@@ -246,10 +246,13 @@ class UpdateHandler:
                             updated_json = updated_json[0]["result"][0]
                             updated_json.pop("id")
                         except:
+                            print("No result found.")
                             pass
                         finally:
-                            if not updated_json["config"]["self-user"] is True:                   
+                            # print("Updated endpoint data: ", updated_json)
+                            if not updated_json["config"]["self-user"]:                   
                                 if updated_json["meta"]["trigger"]:
+                                    print("Triggered.")
                                     asyncio.create_task(queue_processor.QueueProcessor.handleUpdatedEndpointData(endpoint, updated_json))
                                 else:
                                     return fastapi.responses.JSONResponse(

@@ -247,6 +247,26 @@ class SurrealDBHandler:
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+        
+    class GetTokenError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class CreateTokenError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+    
+    class DeleteTokenError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+    class UpdateTokenError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
     
 
 class ReadHandlerError:
