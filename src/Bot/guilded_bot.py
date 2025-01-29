@@ -21,7 +21,7 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 ) 
 
-client = commands.Bot(command_prefix="a!")
+client = commands.Bot(command_prefix=config.COMMAND_PREFIX)
 
 
 client.help_command = None

@@ -22,7 +22,7 @@ sentry_sdk.init(
     profiles_sample_rate=1.0,
 ) 
 
-prefix = "gc!"
+prefix = config.COMMAND_PREFIX
 
 
 def get_endpoint(server: revolt.Server):
