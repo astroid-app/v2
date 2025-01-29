@@ -37,6 +37,9 @@ async def download_attachment(attachment_url, registeredPlatforms):
                 file.close()
                 await surrealdb_handler.AttachmentProcessor.update_attachment(attachment_id, status="downloaded")
             return file
+        if response.status_code == 404:
+            print(f"Attachment not found. Statuscode: {response.status_code}")
+            return None
         else:
             raise errors.AttachmentProcessError.AttachmentDownloadError.AttachmentDownloadError(f"Received invalid Statuscode. Statuscode: {response.status_code}")
     except Exception as e:

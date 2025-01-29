@@ -33,6 +33,7 @@ class UpdateHandler:
         channel_revolt: str = None,
         channel_nerimity: str = None,
         blacklist: str = None,
+        emoji_filtering: bool = None,
         trigger: bool = None,
         sender_channel: str = None,
         sender: str = None,
@@ -51,7 +52,7 @@ class UpdateHandler:
         only_check: bool = False,
     ):
         try:
-            data_token = json.load(open(f"{pathlib.Path(__file__).parent.parent.resolve()}/tokens.json", "r"))[f"{endpoint}"]
+            data_token = await surrealdb_handler.TokenHandler.get_token(endpoint)
 
             if token is not None:
                 if token == config.MASTER_TOKEN or token == data_token:
@@ -156,6 +157,8 @@ class UpdateHandler:
                                         endpoint_data["config"]["blacklist"][index] = blacklist.lower()
                                     else:
                                         endpoint_data["config"]["blacklist"].append(blacklist.lower())
+                        
+                        
 
                         if trigger:
                             endpoint_data["meta"]["trigger"] = trigger
@@ -249,7 +252,7 @@ class UpdateHandler:
                             print("No result found.")
                             pass
                         finally:
-                            # print("Updated endpoint data: ", updated_json)
+                            print("Updated endpoint data: ", updated_json)
                             if not updated_json["config"]["self-user"]:                   
                                 if updated_json["meta"]["trigger"]:
                                     print("Triggered.")

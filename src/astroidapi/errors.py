@@ -267,7 +267,21 @@ class SurrealDBHandler:
         def __init__(self, message):
             self.message = message
             super().__init__(self.message)
+
+    class OptOutError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
     
+    class OptInError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
+
+    class GetOptOutStatusError(Exception):
+        def __init__(self, message):
+            self.message = message
+            super().__init__(self.message)
 
 class ReadHandlerError:
 

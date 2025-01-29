@@ -9,6 +9,7 @@ import fastapi.security
 import secrets
 from typing import Annotated
 import astroidapi.attachment_processor
+import astroidapi.emoji_handler
 import astroidapi.endpoint_update_handler
 import astroidapi.errors
 import astroidapi.get_channel_information
@@ -173,28 +174,11 @@ async def get_cdn_asset(assetId: str):
         return fastapi.responses.JSONResponse(status_code=404, content={"message": "This asset does not exist."})
     except Exception as e:
         return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
-
-@api.get("/docs/props", description="Get the properties of the API.")
-def props():
-    return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/props.json", "r"))
-
-@api.get("/docs/parameters", description="Get the parameters of the API.")
-def parameters():
-    return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/parameters.json", "r"))
-
-@api.get("/docs/responses", description="Get the responses of the API.")
-def responses():
-    return json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/responses.json", "r"))
+    
 
 @api.get("/getserverstructure", description="Get a server structure.")
 def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
-    global data_token
-    try:
-        data_token = json.load(open(f"{pathlib.Path(__file__).parent.resolve()}/tokens.json", "r"))[f"{id}"]
-    except:
-        logging.exception(traceback.print_exc())
-        data_token = None
-        pass
+    data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(id)
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
             headers = {
@@ -323,7 +307,7 @@ async def new_token(endpoint: int,
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
     
     if master_token == Bot.config.MASTER_TOKEN:
-        token = secrets.token_urlsafe(53)
+        token = secrets.token_urlsafe(71)
         exists = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
         if exists:
             await astroidapi.surrealdb_handler.TokenHandler.update_token(endpoint, token)
@@ -344,10 +328,11 @@ async def daily_endpoint_check(master_token: Annotated[str, fastapi.Query(max_le
             for line in summary:
                 txt_file.write(line + "\n")
             txt_file.close()
-            requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - Daily Endpoint Check] {len(summary)} endpoints checked. Summary: https://api.astroid.cc/healtcheck_summaries/{random_token}"})
+            requests.post(Bot.config.API_INFO_WEBHOOK_URL, json={"content": f"[Astroid API - Daily Endpoint Check] {len(summary)} endpoints checked. Summary: https://api.astroid.cc/healtcheck_summaries/{random_token}"})
             return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
         except Exception as e:
             logging.exception(traceback.print_exc())
+            requests.post(Bot.config.API_INFO_WEBHOOK_URL, json={"content": f"[Astroid API - Daily Endpoint Check] An error occurred while checking the endpoints:\n\n `{e}`"})
             return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
@@ -367,11 +352,11 @@ async def clear_temporary_attachments(master_token: Annotated[str, fastapi.Query
         try:
             total_files = len(os.listdir(f"{pathlib.Path(__file__).parent.resolve()}/astroidapi/TMP_attachments")) - 1
             await astroidapi.attachment_processor.force_clear_temporary_attachments()
-            requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - TMP Attachments] Deleted {total_files} temporary attachments."})
+            requests.post(Bot.config.API_INFO_WEBHOOK_URL, json={"content": f"[Astroid API - TMP Attachments] Deleted {total_files} temporary attachments."})
             return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
         except Exception as e:
             logging.exception(traceback.print_exc())
-            requests.post("https://discord.com/api/webhooks/1279497897016299553/3GrZI75dDYwIkwYBac4o2ApJgzlVVCPIZnon_iE5RtaRIyiYUwcdaXxA327oNZyWZXs4", json={"content": f"[Astroid API - TMP Attachments] An error occurred while deleting temporary attachments:\n\n `{e}`"})
+            requests.post(Bot.config.API_INFO_WEBHOOK_URL, json={"content": f"[Astroid API - TMP Attachments] An error occurred while deleting temporary attachments:\n\n `{e}`"})
             return fastapi.responses.JSONResponse(status_code=500, content={"message": f"An error occurred: {e}"})
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
@@ -519,23 +504,23 @@ async def endpoint_healthcheck(endpoint: int, token: str):
         try:
             healty = await astroidapi.health_check.HealthCheck.EndpointCheck.check(endpoint)
             if healty:
-                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This endpoint is healthy.", "details": None})
+                return fastapi.responses.JSONResponse(status_code=200, content={"message": "This endpoint is healthy", "details": None, "isHealthy": True})
         except astroidapi.errors.HealtCheckError.EndpointCheckError.EndpointConfigError as e:
             return fastapi.responses.JSONResponse(status_code=200, content={"message": f"There seems to be an error in the endpoint configuration: {e}",
-                                                                            "details": "configerror"})
+                                                                            "details": "configerror", "isHealthy": False})
         except astroidapi.errors.HealtCheckError.EndpointCheckError.EndpointMetaDataError as e:
             return fastapi.responses.JSONResponse(status_code=200, content={"message": f"There seems to be an error in the endpoint meta data: {e}",
-                                                                            "details": "metadataerror"})
+                                                                            "details": "metadataerror", "isHealhy": False})
         except astroidapi.errors.HealtCheckError.EndpointCheckError as e:
             return fastapi.responses.JSONResponse(status_code=200, content={"message": f"An error occurred: {e}",
-                                                                            "details": "unexpectederror"})
+                                                                            "details": "unexpectederror", "isHealthy": False})
         except astroidapi.errors.SurrealDBHandler.EndpointNotFoundError:
-            return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist.",
-                                                                            "details": "notfound"})
+            return fastapi.responses.JSONResponse(status_code=404, content={"message": "This endpoint does not exist",
+                                                                            "details": "notfound", "isHealthy": False})
         except astroidapi.errors.SurrealDBHandler.GetEndpointError as e:
             traceback.print_exc()
             return fastapi.responses.JSONResponse(status_code=404, content={"message": f"An error occurred: {e}",
-                                                                            "details": "getendpointerror"})
+                                                                            "details": "getendpointerror", "isHealthy": False})
 
 
 @api.post("/healthcheck/{endpoint}/repair", description="Repair the endpoint.")
@@ -565,58 +550,7 @@ async def create_endpoint(endpoint: int):
     except:
         pass
     try:
-        data = {
-            "config": {
-                "self-user": False,
-                "webhooks": {
-                    "discord": [],
-                    "guilded": [],
-                    "revolt": [],
-                    "nerimity": []
-                },
-                "channels": {
-                    "discord": [],
-                    "guilded": [],
-                    "revolt": [],
-                    "nerimity": []
-                },
-                "logs": {
-                    "discord": None,
-                    "guilded": None,
-                    "revolt": None,
-                    "nerimity": None
-                },
-                "blacklist": [],
-                "allowed-ids": [],
-                "isbeta": False
-            },
-            "meta": {
-                "sender-channel": None,
-                "trigger": False,
-                "sender": None,
-                "read": {
-                    "discord": False,
-                    "guilded": False,
-                    "revolt": False,
-                    "nerimity": False
-                },
-                "message": {
-                    "isReply": False,
-                        "reply": {
-                            "message": None,
-                            "author": None
-                        },
-                    "author": {
-                        "name": None,
-                        "avatar": None,
-                        "id": None
-                    },
-
-                    "content": None,
-                    "attachments": []
-                }
-            }
-        }
+        data = astroidapi.health_check.HealthCheck.EndpointCheck.healthy_endpoint_data
         await astroidapi.surrealdb_handler.create(endpoint, data)
         return fastapi.responses.JSONResponse(status_code=201, content={"message": "Created."})
     except FileExistsError:
@@ -860,7 +794,46 @@ async def add_contributor(id: int, username: str = None, avatar: str = None, tok
         return await astroidapi.surrealdb_handler.Contributions.Contributors.create_contributor(id, username, avatar)
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+@api.patch("/emojis/{endpoint}/sync", description="Sync the emojis of a given platform. (From Discord to Nerimity sync only)")
+async def sync_emojis(endpoint: int, platform: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+
+    data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
+    if platform != "discord":
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "This platform is not supported. Only from-discord sync is supported."})
     
+    if token == Bot.config.MASTER_TOKEN or token == data_token:
+        return await astroidapi.emoji_handler.sync_discord_emojis(endpoint, platform)
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+
+@api.post("/optout/{userid}", description="Opt out of the Astroid API.")
+async def optout(userid: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    if token == Bot.config.MASTER_TOKEN:
+        return await astroidapi.surrealdb_handler.OptOut.optout(userid)
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+
+@api.post("/optin/{userid}", description="Opt in to the Astroid API.")
+async def optin(userid: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    if token == Bot.config.MASTER_TOKEN:
+        return await astroidapi.surrealdb_handler.OptOut.optin(userid)
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+
+@api.get("/optout/{userid}", description="Check if a user is opted out.")
+async def check_optout(userid: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    if token == Bot.config.MASTER_TOKEN:
+        return {"optedOut": await astroidapi.surrealdb_handler.OptOut.get_optout_status(userid)}
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
 
 logging.info("[CORE] API started.")
 

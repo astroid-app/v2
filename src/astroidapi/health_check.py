@@ -30,7 +30,9 @@ writes = {
         },
         "blacklist": "config.blacklist",
         "allowed-ids": "config.`allowed-ids`",
-        "isbeta": "config.isbeta"
+        "isbeta": "config.isbeta",
+        "type_emojis": "config.emojis",
+        "emoji_filtering": "config.emoji_filtering"
     },
     "meta": {
         "_message_cache": "meta.`_message_cache`",
@@ -80,9 +82,7 @@ class HealthCheck:
 
 
     class EndpointCheck:
-        @classmethod
-        async def check(cls, endpoint):
-            healthy_endpoint_data = {
+        healthy_endpoint_data = {
                 "config": {
                     "self-user": False,
                     "webhooks": {
@@ -105,7 +105,9 @@ class HealthCheck:
                     },
                     "blacklist": [],
                     "allowed-ids": [],
-                    "isbeta": False
+                    "isbeta": False,
+                    "emojis": [],
+                    "emoji_filtering": False
                 },
                 "meta": {
                     "_message_cache": [],
@@ -134,12 +136,14 @@ class HealthCheck:
                     }
                 }
             }
+        @classmethod
+        async def check(cls, endpoint):
             try:
                 endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
-                for key in healthy_endpoint_data["config"].keys():
+                for key in cls.healthy_endpoint_data["config"].keys():
                     if key not in endpoint_data["config"]:
                         raise errors.HealtCheckError.EndpointCheckError.EndpointConfigError(f"'{key}' not found in endpoint config '{endpoint}'")
-                for key in healthy_endpoint_data["meta"].keys():
+                for key in cls.healthy_endpoint_data["meta"].keys():
                     if key not in endpoint_data["meta"]:
                         raise errors.HealtCheckError.EndpointCheckError.EndpointMetaDataError(f"'{key}' not found in endpoint meta data '{endpoint}'")
                 print("Endpoint is healthy")
@@ -175,7 +179,9 @@ class HealthCheck:
                     },
                     "blacklist": [],
                     "allowed-ids": [],
-                    "isbeta": False
+                    "isbeta": False,
+                    "type_emojis": [],
+                    "emoji_filtering": False
                 },
                 "meta": {
                     "_message_cache": [],
@@ -343,6 +349,20 @@ class HealthCheck:
                 except KeyError:
                     await surrealdb_handler.write_to_structure(endpoint, writes["config"]["isbeta"], healthy_endpoint_data["config"]["isbeta"])
                     summary.append("✘ IsBeta not found. Adding...")
+                await asyncio.sleep(0.1)
+                try:
+                    emojis = endpoint_data["config"]["emojis"]
+                    summary.append("✔ Emojis found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["config"]["type_emojis"], healthy_endpoint_data["config"]["type_emojis"])
+                    summary.append("✘ Emojis not found. Adding...")
+                await asyncio.sleep(0.1)
+                try:
+                    emoji_filtering = endpoint_data["config"]["emoji_filtering"]
+                    summary.append("✔ Emoji Filtering found")
+                except KeyError:
+                    await surrealdb_handler.write_to_structure(endpoint, writes["config"]["emoji_filtering"], healthy_endpoint_data["config"]["emoji_filtering"])
+                    summary.append("✘ Emoji Filtering not found. Adding...")
                 await asyncio.sleep(0.1)
                 try:
                     message_cache = endpoint_data["meta"]["_message_cache"]
