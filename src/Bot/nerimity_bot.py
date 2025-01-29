@@ -12,7 +12,7 @@ import requests
 
 client = nerimity.Client(
     token=config.NERIMITY_TOKEN,
-    prefix='a!',
+    prefix=config.COMMAND_PREFIX,
 )
 
 async def send_message(endpoint, params):
