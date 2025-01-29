@@ -22,12 +22,14 @@ sentry_sdk.init(
 # Set up logging
 logger = logging.getLogger('nextcord')
 logger.setLevel(logging.DEBUG)
-handler = logging.FileHandler(filename='nextcord.log', encoding='utf-8', mode='w')
+date = datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")
+handler = logging.FileHandler(filename=f'nextcord-{date}.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
 
 # Set up intents and create the bot client
-intents = nextcord.Intents.all()
+intents = nextcord.Intents.default()
+intents.message_content = True
 client = commands.Bot(command_prefix="a!", intents=intents)
 
 # Create an aiohttp session
@@ -103,6 +105,11 @@ async def on_message(message: nextcord.Message):
         async with session.get(f"https://api.astroid.cc/{message.guild.id}?token={config.MASTER_TOKEN}") as discord_channel_request:
             discord_channel = await discord_channel_request.json()
         if str(message.channel.id) in discord_channel.get("config").get("channels").get("discord"):
+            async with session.get(f"https://api.astroid.cc/optout/{message.author.id}?token={config.MASTER_TOKEN}") as optout_request:
+                optout = await optout_request.json()
+            if optout.get("optedOut"):
+                return
+            
             global blacklist
             # Get blacklist information from the API
             async with session.get(f"https://api.astroid.cc/{message.guild.id}?token={config.MASTER_TOKEN}") as blacklist_request:
@@ -188,9 +195,85 @@ async def on_message_delete(message: nextcord.Message):
             await client.get_channel(int(log_json["config"]["logs"]["discord"])).send(embed=embed)
 
 
+@client.slash_command(name="opt", description="Set your opt-status", force_global=True)
+async def opt(interaction: nextcord.Interaction, status: str):
+    pass
+
+@opt.subcommand(name="in", description="Opt into Astroid to let your messages be bridged")
+async def opt_in(o_interaction: nextcord.Interaction):
+    embed = nextcord.Embed(title="Opting in?", description="If you opt into Astroid __your messages will be bridged to bridged__ servers.\nThis is global for **all servers** using Astroid.", color=0x3D60FF)
+    class ExternalLinkBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.link, label="Privacy", url="https://astroid.cc/privacy")
+    
+    class ConfirmBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.success, label="Confirm", custom_id="opt_in", emoji="✅")
+
+        async def callback(self, interaction: nextcord.Interaction):
+            async with session.post(f"https://api.astroid.cc/optin/{interaction.user.id}?token={config.MASTER_TOKEN}") as r:
+                r_json = await r.json()
+                if r_json["optedOut"] == False:
+                    await interaction.response.send_message("Opted in successfully.", ephemeral=True)
+                else:
+                    await interaction.response.send_message(f"Could not opt in. ({r.status, r.reason})", ephemeral=True)
+
+    class CancelBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.danger, label="Cancel", custom_id="opt_cancel", emoji="❌")
+
+        async def callback(self, interaction: nextcord.Interaction):
+            await o_interaction.delete_original_message()
+            await interaction.response.send_message("Cancelled.", ephemeral=True)
+
+    class Buttons(nextcord.ui.View):
+        def __init__(self):
+            super().__init__()
+            self.add_item(ExternalLinkBtn())
+            self.add_item(ConfirmBtn())
+            self.add_item(CancelBtn())
+    
+    await o_interaction.response.send_message(embed=embed, view=Buttons(), ephemeral=True)
+
+
+@opt.subcommand(name="out", description="Opt out of Astroid to stop your messages from being bridged")
+async def opt_out(o_interaction: nextcord.Interaction):
+    embed = nextcord.Embed(title="Opting out?", description="If you opt out of Astroid __your messages will not be bridged__ to bridged servers.\nThis is global for **all servers** using Astroid.", color=0x3D60FF)
+    class ExternalLinkBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.link, label="Privacy", url="https://astroid.cc/privacy")
+    
+    class ConfirmBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.success, label="Confirm", custom_id="opt_out", emoji="✅")
+
+        async def callback(self, interaction: nextcord.Interaction):
+            async with session.post(f"https://api.astroid.cc/optout/{interaction.user.id}?token={config.MASTER_TOKEN}") as r:
+                r_json = await r.json()
+                if r_json["optedOut"] == True:
+                    await interaction.response.send_message("Opted out successfully.", ephemeral=True)
+                else:
+                    await interaction.response.send_message(f"Could not opt out. ({r.status, r.reason})", ephemeral=True)
+    
+    class CancelBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.danger, label="Cancel", custom_id="opt_cancel", emoji="❌")
+
+        async def callback(self, interaction: nextcord.Interaction):
+            await o_interaction.delete_original_message()
+            await interaction.response.send_message("Cancelled.", ephemeral=True)
+    
+    class Buttons(nextcord.ui.View):
+        def __init__(self):
+            super().__init__()
+            self.add_item(ExternalLinkBtn())
+            self.add_item(ConfirmBtn())
+            self.add_item(CancelBtn())
+    
+    await o_interaction.response.send_message(embed=embed, view=Buttons(), ephemeral=True)
 
 # Slash command to register the server
-@client.slash_command(name="register", default_member_permissions=8, description="Welcome! You are one step away from bridging your server")
+@client.slash_command(name="register", default_member_permissions=8, description="Welcome! You are one step away from bridging your server", force_global=True)
 async def register(interaction: nextcord.Interaction):
     await interaction.response.send_message("Starting registering process.. (This may take a while.)", ephemeral=True)
     try:
@@ -220,7 +303,7 @@ async def register(interaction: nextcord.Interaction):
         traceback.print_exc()
 
 # Slash command to add another channel for bridging
-@client.slash_command(name="add-bridge", description="More than one channel huh? Add more with this command", default_member_permissions=8)
+@client.slash_command(name="add-bridge", description="More than one channel huh? Add more with this command", default_member_permissions=8, force_global=True)
 async def add_bridge(interaction: nextcord.Interaction):
     await interaction.response.send_message("Adding bridge..", ephemeral=True)
     # Create a webhook for astroid
@@ -233,17 +316,28 @@ async def add_bridge(interaction: nextcord.Interaction):
             await interaction.edit_original_message(content=r.json().get("message"))
 
 # Slash command to display help information
-@client.slash_command(name="help", description="Help needed? This command will show you all the commands available")
+@client.slash_command(name="help", description="Help needed? This command will show you all the commands available", force_global=True)
 async def help(interaction: nextcord.Interaction):
     embed = nextcord.Embed(title="Astroid", description="First time here? To get started we recommend you our **User Guide: https://docs.astroid.cc ** \n\nTo use any of the command below you need **Administrator permissions**.", color=0x3D60FF)
-    class ExternalLinkBtn(nextcord.ui.Button):
+    class UserGuideExternalLinkBtn(nextcord.ui.Button):
         def __init__(self):
             super().__init__(style=nextcord.ButtonStyle.link, label="User Guide", url="https://docs.astroid.cc")
+    
+    class TermsExternalLinkBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.link, label="Terms of Service", url="https://astroid.cc/terms")
+    
+    class PrivacyExternalLinkBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.link, label="Privacy Policy", url="https://astroid.cc/privacy")
 
     class ExternalLink(nextcord.ui.View):
         def __init__(self):
             super().__init__()
-            self.add_item(ExternalLinkBtn())
+            self.add_item(UserGuideExternalLinkBtn())
+            self.add_item(TermsExternalLinkBtn())
+            self.add_item(PrivacyExternalLinkBtn())
+
 
     view = ExternalLink()
     embed.add_field(name="register", value="Register you server.", inline=False)
@@ -252,21 +346,44 @@ async def help(interaction: nextcord.Interaction):
     embed.add_field(name="allow", value="Allow a bot or webhook to be forwarded.", inline=False)
     embed.add_field(name="set-log", value="Setup your logchannel.", inline=False)
     embed.add_field(name="add-bridge", value="Add another channel to bridge over.\nNote: Works like `register`", inline=False)
-    await interaction.response.send_message(embed=embed, ephemeral=True, view=view)
+    embed.add_field(name="opt", value="Set your opt-status. This is globally set for **all servers** using Astroid. Changable anytime.\n" \
+                        "**in**: Opt into Astroid to allow your messages being bridged.\n" \
+                        "**out**: opt out of Astroid. None of you messages will be picked up.", inline=False)
+    await interaction.response.send_message(embed=embed, view=view)
 
 # Slash command to delete the endpoint
-@client.slash_command(name="delete", default_member_permissions=8, description="You want to delete your endpoint? This command will do it for you.")
+@client.slash_command(name="delete", default_member_permissions=8, description="You want to delete your endpoint? This command will do it for you.", force_global=True)
 async def delete(interaction: nextcord.Interaction):
-    await interaction.response.send_message("Deleting your endpoint..", ephemeral=True)
-    # Delete the endpoint in the API
-    async with session.delete(f"https://api.astroid.cc/delete/{interaction.guild.id}?token={config.MASTER_TOKEN}") as r:
-        if r.ok:    
-            await interaction.edit_original_message(content="Deleted endpoint.")
-        else:    
-            await interaction.edit_original_message(content=await r.json().get("message"))
+    embed = nextcord.Embed(title="Are you sure?", description="This action is irreversible. Are you sure you want to delete your endpoint?", color=0x3D60FF)
+    class ConfirmBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.success, label="Confirm", custom_id="delete_confirm", emoji="🗑️")
+
+        async def callback(self, interaction: nextcord.Interaction):
+            await interaction.response.send_message("Deleting your endpoint..", ephemeral=True)
+            # Delete the endpoint in the API
+            async with session.delete(f"https://api.astroid.cc/delete/{interaction.guild.id}?token={config.MASTER_TOKEN}") as r:
+                if r.ok:    
+                    await interaction.edit_original_message(content="Deleted endpoint.")
+                else:    
+                    await interaction.edit_original_message(content=await r.json().get("message"))
+    class CancelBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.danger, label="Cancel", custom_id="delete_cancel", emoji="❌")
+
+        async def callback(self, interaction: nextcord.Interaction):
+            await interaction.response.send_message("Cancelled.", ephemeral=True)
+    
+    class Buttons(nextcord.ui.View):
+        def __init__(self):
+            super().__init__()
+            self.add_item(ConfirmBtn())
+            self.add_item(CancelBtn())
+
+    await interaction.response.send_message(embed=embed, view=Buttons(), ephemeral=True)
 
 # Slash command to set the log channel
-@client.slash_command(name="set-log", default_member_permissions=8, description="Messages will be logged in this channel")
+@client.slash_command(name="set-log", default_member_permissions=8, description="Messages will be logged in this channel", force_global=True)
 async def setlog(interaction: nextcord.Interaction, channel: nextcord.TextChannel):
     await interaction.response.send_message("Setting logchannel..", ephemeral=True)
     # Update the log channel in the API
@@ -277,7 +394,7 @@ async def setlog(interaction: nextcord.Interaction, channel: nextcord.TextChanne
             await interaction.edit_original_message(content=r.json().get("message"))
 
 # Slash command to allow a webhook or bot
-@client.slash_command(name="allow", default_member_permissions=8, description="Allow a webhook or bot to be forwarded")
+@client.slash_command(name="allow", default_member_permissions=8, description="Allow a webhook or bot to be forwarded", force_global=True)
 async def allow(interaction: nextcord.Interaction, id):
     await interaction.response.send_message(f"Adding {id} to allowlist..", ephemeral=True)
     # Update the allowed IDs in the API
@@ -288,7 +405,7 @@ async def allow(interaction: nextcord.Interaction, id):
             await interaction.edit_original_message(content=r.json().get("message"))
 
 # Slash command to generate a new API token
-@client.slash_command(name="generate-token", default_member_permissions=8, description="Lost, forgot or leaked your token? Generate a new one")
+@client.slash_command(name="generate-token", default_member_permissions=8, description="Lost, forgot or leaked your token? Generate a new one", force_global=True)
 async def gen(interaction: nextcord.Interaction):
     await interaction.response.send_message("Generating token..", ephemeral=True)
     # Request a new token from the API
