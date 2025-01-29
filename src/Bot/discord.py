@@ -30,7 +30,7 @@ logger.addHandler(handler)
 # Set up intents and create the bot client
 intents = nextcord.Intents.default()
 intents.message_content = True
-client = commands.Bot(command_prefix="a!", intents=intents)
+client = commands.Bot(command_prefix=config.COMMAND_PREFIX, intents=intents)
 
 # Create an aiohttp session
 session = aiohttp.ClientSession()
