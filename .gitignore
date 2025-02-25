@@ -26,3 +26,4 @@ src/astroidapi/test.py
 /src/healtcheck_summaries
 src/astroidapi/test.py
 src/runtest.py
+src/astroidapi/upd_surrealdb_handler.py

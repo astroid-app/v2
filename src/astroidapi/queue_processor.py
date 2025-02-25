@@ -115,7 +115,11 @@ class QueueProcessor:
             else:
                 raise Exception("Unknown error in sendMessage while processing queue. Queue length is unsupported type or negative.")
         except:
-            await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, message)
+            try:
+                await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, message)
+                await cls.clearLoadedMessage(endpoint, message)
+            except:
+                await surrealdb_handler.QueueHandler.clear_queue(endpoint)
             raise Exception("Error in sendMessage while processing queue.")
 
 

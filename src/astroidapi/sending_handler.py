@@ -117,14 +117,17 @@ class SendingHandler():
         try:
             read_discord = await read_handler.ReadHandler.check_read(endpoint, "discord")
             if read_discord is False:
-                if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["guilded"]:
-                    webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
-                elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
-                    webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
-                elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["revolt"]:
-                    webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
-                else:
-                    raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                try:
+                    if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["guilded"]:
+                        webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
+                    elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
+                        webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
+                    elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["revolt"]:
+                        webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
+                    else:
+                        raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                except KeyError:
+                    return True
                 nextcord_files = []
                 if attachments is not None:
                     for attachment in attachments:
@@ -164,14 +167,17 @@ class SendingHandler():
         try:
             read_guilded = await read_handler.ReadHandler.check_read(endpoint, "guilded")
             if read_guilded is False:
-                if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
-                    webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
-                elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
-                    webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
-                elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["revolt"]:
-                    webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
-                else:
-                    raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                try:
+                    if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
+                        webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
+                    elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
+                        webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
+                    elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["revolt"]:
+                        webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
+                    else:
+                        raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                except KeyError:
+                    return True
                 guilded_files = []
                 if attachments is not None:
                     for attachment in attachments:
@@ -221,14 +227,17 @@ class SendingHandler():
                     response_json = updated_json
                     sender_channel = response_json["meta"]["sender-channel"]
                     discord_channels = response_json["config"]["channels"]["discord"]
-                    if sender_channel in discord_channels:
-                        channel_id = response_json["config"]["channels"]["nerimity"][discord_channels.index(sender_channel)]
-                    elif sender_channel in response_json["config"]["channels"]["guilded"]:
-                        channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["guilded"].index(sender_channel)]
-                    elif sender_channel in response_json["config"]["channels"]["revolt"]:
-                        channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["revolt"].index(sender_channel)]
-                    else:
-                        raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                    try:
+                        if sender_channel in discord_channels:
+                            channel_id = response_json["config"]["channels"]["nerimity"][discord_channels.index(sender_channel)]
+                        elif sender_channel in response_json["config"]["channels"]["guilded"]:
+                            channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["guilded"].index(sender_channel)]
+                        elif sender_channel in response_json["config"]["channels"]["revolt"]:
+                            channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["revolt"].index(sender_channel)]
+                        else:
+                            raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                    except KeyError:
+                        return True
                     message_author_name = response_json["meta"]["message"]["author"]["name"]
                     message_content = response_json["meta"]["message"]["content"]
                     message_content = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "nerimity", endpoint)
@@ -290,15 +299,17 @@ class SendingHandler():
     @classmethod
     async def send_to_revolt(cls, updated_json, endpoint, attachments: list = None):
         if updated_json["meta"]["read"]["revolt"] is False:
-            if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
-                channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
-            elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["guilded"]:
-                channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
-            elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
-                channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
-            else:
-                raise errors.SendingError.ChannelNotFound(f"The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.")
-            
+            try:
+                if updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["discord"]:
+                    channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["discord"].index(updated_json["meta"]["sender-channel"])]
+                elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["guilded"]:
+                    channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["guilded"].index(updated_json["meta"]["sender-channel"])]
+                elif updated_json["meta"]["sender-channel"] in updated_json["config"]["channels"]["nerimity"]:
+                    channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
+                else:
+                    raise errors.SendingError.ChannelNotFound(f"The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.")
+            except KeyError:
+                return True   
             headers = {
                 "X-Bot-Token": f"{config.REVOLT_TOKEN}"
             }

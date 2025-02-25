@@ -243,7 +243,10 @@ class QueueHandler:
                 await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
                 await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
                 data = await db.select(f"endpoints:`{endpoint}`")
-                data["meta"]["_message_cache"].remove(message)
+                try:
+                    data["meta"]["_message_cache"].remove(message)
+                except ValueError:
+                    return await db.select(f"endpoints:`{endpoint}`")
                 if data["meta"]["_message_cache"] is None:
                     await db.query(f"UPDATE endpoints:`{endpoint}` SET meta._message_cache = []")
                     return await db.select(f"endpoints:`{endpoint}`")
