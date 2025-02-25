@@ -177,7 +177,7 @@ async def get_cdn_asset(assetId: str):
     
 
 @api.get("/getserverstructure", description="Get a server structure.")
-def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+async def get_server_structure(id: int, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
     data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(id)
     if token is not None:
         if token == data_token or token == Bot.config.MASTER_TOKEN:
