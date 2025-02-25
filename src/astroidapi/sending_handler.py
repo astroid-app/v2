@@ -126,7 +126,7 @@ class SendingHandler():
                         webhook = updated_json["config"]["webhooks"]["discord"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
                     else:
                         raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
-                except KeyError:
+                except IndexError:
                     return True
                 nextcord_files = []
                 if attachments is not None:
@@ -176,7 +176,7 @@ class SendingHandler():
                         webhook = updated_json["config"]["webhooks"]["guilded"][updated_json["config"]["channels"]["revolt"].index(updated_json["meta"]["sender-channel"])]
                     else:
                         raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
-                except KeyError:
+                except IndexError:
                     return True
                 guilded_files = []
                 if attachments is not None:
@@ -236,7 +236,7 @@ class SendingHandler():
                             channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["revolt"].index(sender_channel)]
                         else:
                             raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
-                    except KeyError:
+                    except IndexError:
                         return True
                     message_author_name = response_json["meta"]["message"]["author"]["name"]
                     message_content = response_json["meta"]["message"]["content"]
@@ -308,7 +308,7 @@ class SendingHandler():
                     channel_id = updated_json["config"]["channels"]["revolt"][updated_json["config"]["channels"]["nerimity"].index(updated_json["meta"]["sender-channel"])]
                 else:
                     raise errors.SendingError.ChannelNotFound(f"The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.")
-            except KeyError:
+            except IndexError:
                 return True   
             headers = {
                 "X-Bot-Token": f"{config.REVOLT_TOKEN}"
