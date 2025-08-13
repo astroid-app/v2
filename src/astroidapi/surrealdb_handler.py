@@ -536,7 +536,14 @@ class Suspension:
             async with Surreal(config.SDB_URL) as db:
                 await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
                 await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
-                return await db.select(f"suspensions:`{endpoint_id}`")
+                try:
+                    data = await db.select(f"suspensions:`{endpoint_id}`")
+                    if data["suspended"]:
+                        return data
+                    else:
+                        return {"suspended": False}
+                except:
+                    return {"suspended": False}
         except Exception as e:
             raise errors.SurrealDBHandler.GetSuspensionStatusError(e)
     
@@ -747,7 +754,7 @@ class TokenHandler:
         with open(token_file, "r") as file:
             data = json.load(file)
             try:
-                return data[endpoint]
+                return data[str(endpoint)]
             except:
                 return None
     
@@ -770,4 +777,14 @@ class TokenHandler:
         with open(token_file, "w") as file:
             json.dump(data, file)
         return data[endpoint]
-
+    
+    @classmethod
+    async def delete_token(cls, endpoint):
+        token_file = f"{pathlib.Path(__file__).parent.parent.resolve()}/tokens.json"
+        with open(token_file, "r") as file:
+            data = json.load(file)
+            if endpoint in data:
+                del data[endpoint]
+        with open(token_file, "w") as file:
+            json.dump(data, file)
+        return endpoint

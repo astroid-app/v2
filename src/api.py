@@ -30,6 +30,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import logging
 import astroidapi
+import threading
 
 # Configure logging to log to a file
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -231,9 +232,10 @@ async def get_all_endpoints(token: Annotated[str, fastapi.Query(max_length=85, m
 @api.get("/{endpoint}", description="Get an endpoint.")
 async def get_endpoint(endpoint: int,
                  token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None, download: bool = False):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     global data_token
     try:
@@ -261,9 +263,10 @@ async def get_endpoint(endpoint: int,
 @api.get("/bridges/{endpoint}", description="Get an endpoint.")
 async def get_bridges(endpoint: int,
                 token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     global data_token
     try:
         data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
@@ -302,17 +305,20 @@ async def get_bridges(endpoint: int,
 @api.post("/token/{endpoint}", description="Generate a new token. (Only works with astroid-Bot)")
 async def new_token(endpoint: int,
               master_token: Annotated[str, fastapi.Query(max_length=85, min_length=85)]):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     if master_token == Bot.config.MASTER_TOKEN:
-        token = secrets.token_urlsafe(71)
+        token = secrets.token_urlsafe(53)
         exists = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
         if exists:
             await astroidapi.surrealdb_handler.TokenHandler.update_token(endpoint, token)
+            return fastapi.responses.JSONResponse(status_code=200, content={"token": token})
         else:
-            await astroidapi.surrealdb_handler.TokenHandler.create_token(endpoint, token)
+            token = await astroidapi.surrealdb_handler.TokenHandler.create_token(endpoint, token)
+            return fastapi.responses.JSONResponse(status_code=200, content={"token": token})
 
     else:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "The provided token is invalid."})
@@ -397,9 +403,10 @@ async def post_endpoint(
     beta: bool = False,
     only_check = False,
 ):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
 
     if not token:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "You must provide a token."})
@@ -447,6 +454,10 @@ async def post_endpoint(
         beta=beta,
         only_check=only_check,
     )
+    thread = threading.Thread(target=astroidapi.health_check.HealthCheck.EndpointCheck.check, args=(endpoint,))
+    thread.daemon = True
+    thread.start()
+    thread.join()
     return await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__)
 
 
@@ -471,9 +482,10 @@ async def mark_read(endpoint: int,
               read_guilded: bool = None,
               read_revolt: bool = None,
               read_nerimity: bool = None):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     if token == data_token or token == Bot.config.MASTER_TOKEN:
         try:
@@ -496,9 +508,10 @@ async def mark_read(endpoint: int,
 
 @api.get("/healthcheck/{endpoint}", description="Validate the endpoints strucuture.")
 async def endpoint_healthcheck(endpoint: int, token: str):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     if token == Bot.config.MASTER_TOKEN:
         try:
@@ -525,9 +538,10 @@ async def endpoint_healthcheck(endpoint: int, token: str):
 
 @api.post("/healthcheck/{endpoint}/repair", description="Repair the endpoint.")
 async def repair_endpoint(endpoint: int, token: str):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     if token == Bot.config.MASTER_TOKEN:
         try:
@@ -544,16 +558,23 @@ async def repair_endpoint(endpoint: int, token: str):
           response_description="Endpoints data.")
 async def create_endpoint(endpoint: int):
     try:
-        suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+        suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+        suspend_status = suspension_status["suspended"]
         if suspend_status:
-            return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+            return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
+    except:
+        pass
+    try:
+        endpoint = await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__)
+        if endpoint:
+            return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint already exists."})
     except:
         pass
     try:
         data = astroidapi.health_check.HealthCheck.EndpointCheck.healthy_endpoint_data
         await astroidapi.surrealdb_handler.create(endpoint, data)
         return fastapi.responses.JSONResponse(status_code=201, content={"message": "Created."})
-    except FileExistsError:
+    except:
         return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint exists already."})
 
 
@@ -568,7 +589,7 @@ async def delete_endpoint(endpoint: int,
                     await astroidapi.surrealdb_handler.delete(endpoint)
                     await astroidapi.surrealdb_handler.TokenHandler.delete_token(endpoint)
                     return fastapi.responses.JSONResponse(status_code=200, content={"message": "Deleted."})
-                except FileNotFoundError:
+                except:
                     return fastapi.responses.JSONResponse(status_code=404,
                                                         content={"message": "This endpoint does not exist."})
             else:
@@ -613,9 +634,10 @@ async def delete_enpoint_data(endpoint: int,
                         message_content: bool = None,
                         message_attachments: Annotated[str, fastapi.Query(max_length=1550, min_length=20)] = None,
                         token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
     if token is not None:
@@ -715,9 +737,10 @@ async def get_endpoint_platform(platform: str, id: str, token: Annotated[str, fa
 
 @api.post("/createendpoint/{platform}", description="Create an endpoint via a platform server id.")
 async def create_endpoint_platform(platform: str, endpoint: int, id: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
     
     if not token == Bot.config.MASTER_TOKEN:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid. (Only the master token can be used to view or create relations.)"})
@@ -797,9 +820,10 @@ async def add_contributor(id: int, username: str = None, avatar: str = None, tok
 
 @api.patch("/emojis/{endpoint}/sync", description="Sync the emojis of a given platform. (From Discord to Nerimity sync only)")
 async def sync_emojis(endpoint: int, platform: str, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
-    suspend_status = await astroidapi.suspension_handler.Endpoint.is_suspended(endpoint)
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
     if suspend_status:
-        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended."})
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
 
     data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
     if platform != "discord":
@@ -807,6 +831,88 @@ async def sync_emojis(endpoint: int, platform: str, token: Annotated[str, fastap
     
     if token == Bot.config.MASTER_TOKEN or token == data_token:
         return await astroidapi.emoji_handler.sync_discord_emojis(endpoint, platform)
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+
+@api.post("/emojis/{endpoint}/add", description="Add an emoji to the endpoint.")
+async def add_emoji(endpoint: int, request: fastapi.Request, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
+    emoji = await request.json()
+    if not emoji:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You must provide an emoji structure.",
+                                                                        "example": {
+                                                                            "discord": "<:test:1234567890>",
+                                                                            "guilded": "<:test:1234567890>",
+                                                                            "revolt": ":test:",
+                                                                            "nerimity": "[ce:1234567890:test]"
+                                                                        }})
+    sample_structure = {
+        "discord": "<:test:1234567890>",
+        "guilded": "<:test:1234567890>",
+        "revolt": ":test:",
+        "nerimity": "[ce:1234567890:test]"
+    }
+    for key in emoji:
+        if key not in sample_structure:
+            return fastapi.responses.JSONResponse(status_code=400, content={"message": "You must provide an emoji structure.",
+                                                                            "example": {
+                                                                                "discord": "<:test:1234567890>",
+                                                                                "guilded": "<:test:1234567890>",
+                                                                                "revolt": ":test:",
+                                                                                "nerimity": "[ce:1234567890:test]"
+                                                                            }})
+    data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
+    if token == Bot.config.MASTER_TOKEN or token == data_token:
+        return await astroidapi.emoji_handler.add_emoji(endpoint, emoji) # type: ignore
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+
+@api.delete("/emojis/{endpoint}/delete", description="Delete an emoji from the endpoint.")
+async def delete_emoji(endpoint: int, request: fastapi.Request, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
+    emoji = await request.json()
+    if not emoji:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You must provide an emoji structure.",
+                                                                        "example": {
+                                                                            "discord": "<:test:1234567890>",
+                                                                            "guilded": "<:test:1234567890>",
+                                                                            "revolt": ":test:",
+                                                                            "nerimity": "[ce:1234567890:test]"
+                                                                        }})
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
+    
+    data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
+    if token == Bot.config.MASTER_TOKEN or token == data_token:
+        return await astroidapi.emoji_handler.remove_emoji(endpoint, emoji)
+    else:
+        return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
+
+@api.post("/emojis/{endpoint}/update", description="Update an emoji from the endpoint.")
+async def update_emoji(endpoint: int, request: fastapi.Request, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+    suspension_status = await astroidapi.surrealdb_handler.Suspension.get_suspend_status(endpoint)
+    suspend_status = suspension_status["suspended"]
+    emoji = await request.json()
+    if not emoji:
+        return fastapi.responses.JSONResponse(status_code=400, content={"message": "You must provide an emoji structure.",
+                                                                        "example": {
+                                                                            "discord": "<:test:1234567890>",
+                                                                            "guilded": "<:test:1234567890>",
+                                                                            "revolt": ":test:",
+                                                                            "nerimity": "[ce:1234567890:test]"
+                                                                        }})
+    if suspend_status:
+        return fastapi.responses.JSONResponse(status_code=403, content={"message": "This endpoint is suspended.", "reason": suspension_status["reason"], "suspendedBy": suspension_status["suspendedBy"]})
+    
+    data_token = await astroidapi.surrealdb_handler.TokenHandler.get_token(endpoint)
+    if token == Bot.config.MASTER_TOKEN or token == data_token:
+        return await astroidapi.emoji_handler.update_emoji(endpoint, emoji)
     else:
         return fastapi.responses.JSONResponse(status_code=401, content={"message": "The provided token is invalid."})
 

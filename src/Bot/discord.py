@@ -38,6 +38,7 @@ session = aiohttp.ClientSession()
 async def send_iamup():
     async with aiohttp.ClientSession() as session:
         async with session.post(f"https://status.astroid.cc/monitor/iamup/discord") as r:
+            await session.close()
             if r.status == 200:
                 print("Sent up status.")
             else:
@@ -136,7 +137,7 @@ async def on_message(message: nextcord.Message):
                 if not message.attachments and not message.embeds:
                     print(1)
                     # Update the message content in the API
-                    async with session.post(f"https://api.astroid.cc/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}") as update_request:
+                    async with session.post(f"https://api.astroid.cc/update/{message.channel.guild.id}?message_content={message.content}&message_author_name={message.author.display_name}&message_author_avatar={message.author.avatar.url}&message_author_id={message.author.id}&trigger=true&sender=discord&token={config.MASTER_TOKEN}&sender_channel={message.channel.id}") as update_request:
                         pass
                 if message.embeds:
                     print(2)
@@ -275,32 +276,66 @@ async def opt_out(o_interaction: nextcord.Interaction):
 # Slash command to register the server
 @client.slash_command(name="register", default_member_permissions=8, description="Welcome! You are one step away from bridging your server", force_global=True)
 async def register(interaction: nextcord.Interaction):
-    await interaction.response.send_message("Starting registering process.. (This may take a while.)", ephemeral=True)
-    try:
-        # Create a webhook for astroid
-        webhook = await interaction.channel.create_webhook(name="astroid")
-        # Create an endpoint in the API
-        async with session.post(f"https://api.astroid.cc/create?endpoint={interaction.guild.id}") as r1:
-            if r1.ok:
-                await interaction.edit_original_message(content="Created endpoint. Updating values.. (This may take a while.)")
+    terms_and_privacy_embed = nextcord.Embed(title="Terms and Privacy", description="Please read and accept the terms and privacy policy to continue.", color=0x3D60FF)
+    
+    async def proceed_with_registration(interaction: nextcord.Interaction):
+        """Proceed with the actual registration process"""
+        try:
+            await interaction.response.send_message("Creating your endpoint...", ephemeral=True)
+            
+            # Create a webhook for astroid
+            webhook = await interaction.channel.create_webhook(name="astroid")
+            # Create an endpoint in the API
+            async with session.post(f"https://api.astroid.cc/create?endpoint={interaction.guild.id}") as r1:
+                if r1.ok:
+                    await interaction.edit_original_message(content="Created endpoint. Updating values.. (This may take a while.)")
+                else:
+                    await interaction.edit_original_message(content=(await r1.json()).get("message"))
+            # Request a token from the API
+            async with session.post(f"https://api.astroid.cc/token/{interaction.guild.id}?master_token={config.MASTER_TOKEN}") as token_request:
+                token_data = await token_request.json()
+            token = token_data["token"]
+            # Update values in the API
+            async with session.post(f"https://api.astroid.cc/update/{interaction.channel.guild.id}?channel_discord={interaction.channel_id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r2:
+                if r2.ok:    
+                    await interaction.edit_original_message(content="Updated values. Requesting token.. (This may take a while.)")
+                else:    
+                    await interaction.edit_original_message(content=(await r2.json()).get("message"))
+            if token_request.ok:
+                await interaction.edit_original_message(content=f"Created endpoint: https://api.astroid.cc/{interaction.guild.id}\nYour API Token is: `{token}`\nSave and **__do not__** share this!\nHop over to the other platform/s and run this command in the channel, you want do bridge over to:`a!register {interaction.guild.id}`")
             else:
-                await interaction.edit_original_message(content=r1.json().get("message"))
-        # Request a token from the API
-        async with session.post(f"https://api.astroid.cc/token/{interaction.guild.id}?master_token={config.MASTER_TOKEN}") as token_request:
-            token_data = await token_request.json()
-        token = token_data["token"]
-        # Update values in the API
-        async with session.post(f"https://api.astroid.cc/update/{interaction.channel.guild.id}?channel_discord={interaction.channel_id}&webhook_discord={webhook.url}&token={config.MASTER_TOKEN}") as r2:
-            if r2.ok:    
-                await interaction.edit_original_message(content="Updated values. Requesting token.. (This may take a while.)")
-            else:    
-                await interaction.edit_original_message(content=r2.json().get("message"))
-        if token_request.ok:
-            await interaction.edit_original_message(content=f"Created enpoint: https://api.astroid.cc/{interaction.guild.id}\nYour API Token is: `{token}`\nSave and **__do not__** share this!\nHop over to the other platform/s and run this command in the channel, you want do bridge over to:`a!register {interaction.guild.id}`")
-        else:
-            await interaction.edit_original_message(content=token_data.get("message"))    
-    except:
-        traceback.print_exc()
+                await interaction.edit_original_message(content=token_data.get("message"))    
+        except Exception:
+            traceback.print_exc()
+    
+    class AcceptBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.success, label="Accept", custom_id="accept_terms", emoji="✅")
+        
+        async def callback(self, btn_interaction: nextcord.Interaction):
+            await proceed_with_registration(btn_interaction)
+    
+    class DeclineBtn(nextcord.ui.Button):
+        def __init__(self):
+            super().__init__(style=nextcord.ButtonStyle.danger, label="Decline", custom_id="decline_terms", emoji="❌")
+        
+        async def callback(self, btn_interaction: nextcord.Interaction):
+            await btn_interaction.response.send_message("You declined the terms and privacy policy. Registration cancelled.", ephemeral=True)
+            await interaction.delete_original_message(delay=5)
+    
+    class ExternalLinksView(nextcord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=300)  # 5 minute timeout
+            self.add_item(nextcord.ui.Button(style=nextcord.ButtonStyle.link, label="Terms", url="https://astroid.cc/terms"))
+            self.add_item(nextcord.ui.Button(style=nextcord.ButtonStyle.link, label="Privacy", url="https://astroid.cc/privacy"))
+            self.add_item(nextcord.ui.Button(style=nextcord.ButtonStyle.link, label="User Guide", url="https://docs.astroid.cc"))
+            self.add_item(AcceptBtn())
+            self.add_item(DeclineBtn())
+        
+        async def on_timeout(self):
+            await interaction.edit_original_message(content="You took too long to respond. Please run the command again.", view=None)
+
+    await interaction.response.send_message(embed=terms_and_privacy_embed, view=ExternalLinksView(), ephemeral=True)
 
 # Slash command to add another channel for bridging
 @client.slash_command(name="add-bridge", description="More than one channel huh? Add more with this command", default_member_permissions=8, force_global=True)
