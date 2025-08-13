@@ -485,7 +485,7 @@ async def post_endpoint_json(
             updated = await astroidapi.surrealdb_handler.overwrite_json(endpoint, body)
             return fastapi.responses.JSONResponse(status_code=200, content=updated)
         else:
-            return fastapi.responses.JSONResponse(status_code=400, content={"message": "Invalid request. Missing endpoint or body."}))
+            return fastapi.responses.JSONResponse(status_code=400, content={"message": "Invalid request. Missing endpoint or body."})
     else:
         return fastapi.responses.JSONResponse(status_code=404, content={"detail": "Not found"})
 
