@@ -2,7 +2,7 @@ name: Deploy Astroid API update via Github Actions
 on: 
   workflow_dispatch:
   release:
-    types: [published]
+    types: [published, edited]
 
 jobs:
   stop_api:
@@ -31,7 +31,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cp -r /root/guildcord/src/astroidapi /root/backup/guildcord/src
-            cp -r /root/guildcord/src/api.py /root/backup/guildcord/src
+            cp -r /root/guildcord/src/api.py /root/backup/guildcord/src/api.py 
 
   update_api:
     runs-on: ubuntu-latest
@@ -47,8 +47,9 @@ jobs:
           script: |
             cd /root/astroid
             git pull origin main
-            cp -r /root/astroid/src/astroidapi /root/guildcord/src
-            cp -r /root/astroid/src/api.py /root/guildcord/src
+            cp -r /root/astroid/src/astroidapi /root/guildcord/src/astroidapi
+            cp -r /root/astroid/src/api.py /root/guildcord/src/api.py
+            cp -r /root/astroid/.git /root/guildcord/.git
   
   deploy_api:
     runs-on: ubuntu-latest
