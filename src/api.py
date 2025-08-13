@@ -31,6 +31,7 @@ from slowapi.util import get_remote_address
 import logging
 import astroidapi
 import threading
+import subprocess
 
 # Configure logging to log to a file
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -84,7 +85,16 @@ def view_logs(token: Annotated[str, fastapi.Query(max_length=85, min_length=10)]
 
 @api.get("/ga-test")
 def ga_test():
-    return fastapi.responses.JSONResponse(status_code=200, content={"commited": "210824-15"})
+    try:
+        # Get the current commit hash
+        result = subprocess.run(['git', 'rev-parse', 'HEAD'], 
+                              capture_output=True, text=True, check=True)
+        commit_hash = result.stdout.strip()[:7]  # Get short hash (first 7 chars)
+        
+        return fastapi.responses.JSONResponse(status_code=200, content={"commited": commit_hash})
+    except subprocess.CalledProcessError:
+        # Fallback if git command fails
+        return fastapi.responses.JSONResponse(status_code=200, content={"commited": "unknown"})
 
 @api.get("/assets/{asset}", description="Get an asset.")
 def get_asset(asset: str, width: int = None, height: int = None):

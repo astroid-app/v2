@@ -127,6 +127,7 @@ class SendingHandler():
                     else:
                         raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
                 except IndexError:
+                    await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
                     return True
                 nextcord_files = []
                 if attachments is not None:
@@ -134,10 +135,13 @@ class SendingHandler():
                         file = nextcord.File(attachment.name, filename=attachment.name.split("/")[-1])
                         nextcord_files.append(file)
                         await surrealdb_handler.AttachmentProcessor.update_attachment(attachment.name.split("/")[-1].split(".")[0], sentby="discord")
-                updated_json["meta"]["message"]["content"] = await emoji_handler.convert_message(updated_json["meta"]["message"]["content"], updated_json["meta"]["sender"], "discord", endpoint)
+                message_content = updated_json["meta"]["message"].get("content")
+                print(message_content)
+                if message_content is not None and message_content != "":
+                    updated_json["meta"]["message"]["content"] = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "discord", endpoint)
                 async with aiohttp.ClientSession() as session:
                     webhook_obj = nextcord.Webhook.from_url(webhook, session=session)
-                    message_content = updated_json["meta"]["message"]["content"]
+                    message_content = updated_json["meta"]["message"].get("content")
                     if message_content is None or message_content == "" or message_content == " ":
                         if updated_json["meta"]["message"]["attachments"] is not None:
                             if updated_json["meta"]["message"]["attachments"] is not None:
@@ -177,6 +181,7 @@ class SendingHandler():
                     else:
                         raise errors.SendingError.ChannelNotFound(f'The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
                 except IndexError:
+                    await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
                     return True
                 guilded_files = []
                 if attachments is not None:
@@ -184,19 +189,20 @@ class SendingHandler():
                         file = guilded.File(attachment.name, filename=attachment.name.split("/")[-1])
                         guilded_files.append(file)
                         await surrealdb_handler.AttachmentProcessor.update_attachment(attachment.name.split("/")[-1].split(".")[0], sentby="guilded")
-                updated_json["meta"]["message"]["content"] = await emoji_handler.convert_message(updated_json["meta"]["message"]["content"], updated_json["meta"]["sender"], "guilded", endpoint)
+                message_content = updated_json["meta"]["message"].get("content")
+                if message_content is None or message_content == "" or message_content == " ":
+                    updated_json["meta"]["message"]["content"] = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "guilded", endpoint)
                 async with aiohttp.ClientSession() as session:
                     asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "guilded"))
                     webhook_obj = guilded.Webhook.from_url(webhook, session=session)
                     try:
-                        message_content = updated_json["meta"]["message"]["content"]
                         try:
                             message_content = formatter.Format.format_links_guilded_safe(message_content)
                         except Exception as e:
                             print("[SendToGuilded] Failed to format links: ", e)
-                        if message_content is None or message_content == "" or message_content == " ":
+                        if message_content is None and message_content != "":
                             if updated_json["meta"]["message"]["attachments"] is not None:
-                                message_content = "‎ "
+                                message_content = "‎"
                         if updated_json["meta"]["message"]["isReply"] is True:
                             reply_emoji_filtered = await emoji_handler.convert_message(updated_json["meta"]["message"]["reply"]["message"], updated_json["meta"]["sender"], "guilded", endpoint)
                             message_content = f"> **{updated_json['meta']['message']['reply']['author']}**\n> {reply_emoji_filtered}\n\n{message_content}"
@@ -237,10 +243,12 @@ class SendingHandler():
                         else:
                             raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
                     except IndexError:
+                        await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
                         return True
                     message_author_name = response_json["meta"]["message"]["author"]["name"]
-                    message_content = response_json["meta"]["message"]["content"]
-                    message_content = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "nerimity", endpoint)
+                    message_content = response_json["meta"]["message"].get("content")
+                    if message_content is not None and message_content != "":
+                        message_content = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "nerimity", endpoint)
                     if updated_json["config"]["isbeta"] is True:
                         headers = {
 
@@ -309,6 +317,7 @@ class SendingHandler():
                 else:
                     raise errors.SendingError.ChannelNotFound(f"The channel {updated_json["meta"]["sender-channel"]} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.")
             except IndexError:
+                await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
                 return True   
             headers = {
                 "X-Bot-Token": f"{config.REVOLT_TOKEN}"
@@ -319,8 +328,31 @@ class SendingHandler():
                     "avatar": updated_json["meta"]["message"]["author"]["avatar"],
                     "name": updated_json["meta"]["message"]["author"]["name"]
                 },
-                "content": updated_json["meta"]["message"]["content"]
+                "content": updated_json["meta"]["message"].get("content")
             }
+            message_content = updated_json["meta"]["message"].get("content")
+            if message_content is not None and message_content != "":
+                payload["content"] = await emoji_handler.convert_message(payload["content"], updated_json["meta"]["sender"], "revolt", endpoint)
+            if updated_json["meta"]["message"]["isReply"] is True and message_content is not None:
+                reply_emoji_filtered = await emoji_handler.convert_message(updated_json["meta"]["message"]["reply"]["message"], updated_json["meta"]["sender"], "revolt", endpoint)
+                payload["content"] = f"> **{updated_json['meta']['message']['reply']['author']}**\n> {reply_emoji_filtered}\n\n{payload['content']}"    
+            if attachments is not None:
+                formdata = aiohttp.FormData()                                                                                                           
+                try:
+                    if '../' in attachments[0].name or '..\\' in attachments[0].name:
+                        raise Exception("Invalid file path")
+                    else:
+                        formdata.add_field("file", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
+                        async with aiohttp.ClientSession() as session:
+                            async with session.post("https://autumn.revolt.chat/attachments", headers=headers, data=formdata) as r:
+                                if r.ok:
+                                    payload["attachments"] = [(await r.json())["id"]]
+                                else:
+                                    raise errors.SendingError.SendFromRevoltError(f"Failed to upload attachment to revolt. Response: {r.status}, {r.reason}")
+                            await session.close()
+                except Exception as e:
+                    print("Error uploading attachment to revolt: ", e)
+
 
             async with aiohttp.ClientSession() as session:
                 async with session.post(url, headers=headers, json=payload) as r:

@@ -31,6 +31,7 @@ client.help_command = None
 async def send_iamup():
     async with aiohttp.ClientSession() as session:
         async with session.post(f"https://status.astroid.cc/monitor/iamup/guilded") as r:
+            await session.close()
             if r.status == 200:
                 print("Sent up status.")
             else:

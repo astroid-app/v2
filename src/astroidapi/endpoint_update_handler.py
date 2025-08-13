@@ -223,8 +223,8 @@ class UpdateHandler:
                         if message_attachments:
                             if "," in message_attachments:
                                 for val in message_attachments.split(","):
-                                    if val.lower() not in [x.lower() for x in endpoint_data["meta"]["message"]["attachments"]]:
-                                        endpoint_data["meta"]["message"]["attachments"].append(val.lower())
+                                    if val not in [x for x in endpoint_data["meta"]["message"]["attachments"]]:
+                                        endpoint_data["meta"]["message"]["attachments"].append(val)
                             else:
                                 endpoint_data["meta"]["message"]["attachments"] = [message_attachments]
 

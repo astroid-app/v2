@@ -84,6 +84,20 @@ async def convert_message(message, sender, receiver, endpoint):
                 endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
                 if endpoint_data["config"]["emoji_filtering"]:
                     message = message.replace(emoji, "")
+    
+    elif sender == "revolt":
+        emojis = re.findall(r':\w+:', message)
+        print(emojis)
+        for emoji in emojis:
+            print(emoji)
+            emoji_data = await convert_emoji(emoji, sender, receiver, endpoint)
+            print(emoji_data)
+            if emoji_data is not None:
+                message = message.replace(emoji, emoji_data)
+            else:    
+                endpoint_data = await surrealdb_handler.get_endpoint(endpoint, __file__)
+                if endpoint_data["config"]["emoji_filtering"]:
+                    message = message.replace(emoji, "")
 
     return message
 
@@ -258,3 +272,55 @@ async def _sync_discord_emojis(endpoint, platform):
         except Exception as e:
             print(f"Failed to delete emoji file {emoji['id']}.png")
             continue
+
+
+async def add_emoji(endpoint, emoji):
+    endpoint_data = await surrealdb_handler.get_endpoint(int(endpoint), __file__)
+    endpoint_emojis = endpoint_data["config"]["emojis"]
+    endpoint_emojis.append(emoji)
+    await surrealdb_handler.write_to_structure(int(endpoint), "config.emojis", endpoint_emojis)
+    return {
+                "message": f"Added emoji {emoji} to endpoint {endpoint}"
+    }
+
+
+async def remove_emoji(endpoint, emoji):
+    endpoint_data = await surrealdb_handler.get_endpoint(int(endpoint), __file__)
+    endpoint_emojis = endpoint_data["config"]["emojis"]
+    for emoji_data in endpoint_emojis:
+        if "discord" in emoji_data.keys():
+            if emoji_data["discord"] == emoji["discord"]:
+                endpoint_emojis.remove(endpoint_emojis[endpoint_emojis.index(emoji_data)])
+                await surrealdb_handler.write_to_structure(int(endpoint), "config.emojis", endpoint_emojis)
+                return {"message": f"Removed emoji {emoji['discord']} from endpoint {endpoint}"}
+        if "nerimity" in emoji_data.keys():
+            if emoji_data["nerimity"] == emoji["nerimity"]:
+                endpoint_emojis.remove(endpoint_emojis[endpoint_emojis.index(emoji_data)])
+                await surrealdb_handler.write_to_structure(int(endpoint), "config.emojis", endpoint_emojis)
+                return {"message": f"Removed emoji {emoji['nerimity']} from endpoint {endpoint}"}
+        if "guilded" in emoji_data.keys():
+            if emoji_data["guilded"] == emoji["guilded"]:
+                endpoint_emojis.remove(endpoint_emojis[endpoint_emojis.index(emoji_data)])
+                await surrealdb_handler.write_to_structure(int(endpoint), "config.emojis", endpoint_emojis)
+                return {"message": f"Removed emoji {emoji['guilded']} from endpoint {endpoint}"}
+        if "revolt" in emoji_data.keys():
+            if emoji_data["revolt"] == emoji["revolt"]:
+                endpoint_emojis.remove(endpoint_emojis[endpoint_emojis.index(emoji_data)])
+                await surrealdb_handler.write_to_structure(int(endpoint), "config.emojis", endpoint_emojis)
+                return {"message": f"Removed emoji {emoji['revolt']} from endpoint {endpoint}"}
+
+
+async def update_emoji(endpoint, emoji):
+    endpoint_data = await surrealdb_handler.get_endpoint(int(endpoint), __file__)
+    endpoint_emojis = endpoint_data["config"]["emojis"]
+    for emoji_data in endpoint_emojis:
+        if "discord" in emoji_data.keys():
+            emoji_data["discord"] = emoji["discord"]
+        if "nerimity" in emoji_data.keys():
+            emoji_data["nerimity"] = emoji["nerimity"]
+        if "guilded" in emoji_data.keys():
+            emoji_data["guilded"] = emoji["guilded"]
+        if "revolt" in emoji_data.keys():
+            emoji_data["revolt"] = emoji["revolt"]
+    await surrealdb_handler.write_to_structure(int(endpoint), "config.emojis", endpoint_emojis)
+    return {"message": f"Updated emoji {emoji['discord']} in endpoint {endpoint}"}

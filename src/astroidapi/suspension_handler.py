@@ -25,6 +25,14 @@ class Endpoint():
             return False
     
     @classmethod
+    async def get_suspend_info(cls, endpoint_id):
+        try:
+            info = await surrealdb_handler.Suspension.get_suspend_status(endpoint_id)
+            return info["reason"]
+        except errors.SurrealDBHandler.GetSuspensionStatusError as e:
+            raise errors.SuspensionHandlerError.GetSuspensionStatusError(e)
+    
+    @classmethod
     async def suspend(cls, endpoint_id, reason, suspended_by: int, expire_at: int = None):
         try:
             await surrealdb_handler.Suspension.Endpoints.suspend(endpoint_id, reason, suspended_by, expire_at)

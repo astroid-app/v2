@@ -76,6 +76,10 @@ class QueueProcessor:
 
     @classmethod
     async def appendMessage(cls, endpoint, updated_json):
+        is_suspend = await surrealdb_handler.Suspension.Endpoints.get_suspend_status(endpoint)
+        if is_suspend["suspended"]:
+            print(f"Endpoint {endpoint} is suspended. Not appending message.")
+            return False
         print(f"Appending message for endpoint {endpoint}")
         if updated_json is None:
             raise Exception("You must provide a valid 'updated_json' json object to appendMessage.")

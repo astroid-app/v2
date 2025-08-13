@@ -23,6 +23,7 @@ async def send_message(endpoint, params):
 async def send_iamup():
     async with aiohttp.ClientSession() as session:
         async with session.post(f"https://status.astroid.cc/monitor/iamup/nerimity") as r:
+            await session.close()
             if r.status == 200:
                 print("Sent up status.")
             else:
