@@ -87,8 +87,10 @@ def view_logs(token: Annotated[str, fastapi.Query(max_length=85, min_length=10)]
 def ga_test():
     try:
         # Get the current commit hash
-        result = subprocess.run(['git', 'rev-parse', 'HEAD'], 
-                              capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'], 
+            cwd='/root/astroid',
+            capture_output=True, text=True, check=True)
         commit_hash = result.stdout.strip()[:7]  # Get short hash (first 7 chars)
         
         return fastapi.responses.JSONResponse(status_code=200, content={"commited": commit_hash})
