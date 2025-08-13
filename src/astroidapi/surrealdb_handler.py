@@ -158,6 +158,18 @@ async def write_to_structure(endpoint, key, value):
         raise errors.SurrealDBHandler.UpdateEndpointError(e)
 
 
+async def overwrite_json(endpoint: int, json_data: dict):
+    print(f"Overwriting JSON config for {endpoint}")
+    try:
+        async with Surreal(config.SDB_URL) as db:
+            await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
+            await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
+            await db.query(f"UPDATE endpoints:`{endpoint}` SET data = {json_data}")
+            return await db.query(f"SELECT * FROM endpoints:`{endpoint}`")
+    except Exception as e:
+        raise errors.SurrealDBHandler.UpdateEndpointError(e)
+
+
 class OptOut:
     @classmethod
     async def optout(cls, userid: str):

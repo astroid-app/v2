@@ -473,14 +473,19 @@ async def post_endpoint(
     return await astroidapi.surrealdb_handler.get_endpoint(endpoint, __file__)
 
 
-@api.patch("/sync", description="Sync the local files with the database.")
-async def sync_files(endpoint: int = None, token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None):
+@api.post("/update/{endpoint}/json")
+async def post_endpoint_json(
+    endpoint: int,
+    request: fastapi.Request,
+    token: Annotated[str, fastapi.Query(max_length=85, min_length=71)] = None,
+):
     if token == Bot.config.MASTER_TOKEN:
-        if endpoint:
-            await astroidapi.surrealdb_handler.sync_local_files(f"{pathlib.Path(__file__).parent.resolve()}/endpoints/{endpoint}.json", True)
+        body = await request.json()
+        if endpoint and body:
+            updated = await astroidapi.surrealdb_handler.overwrite_json(endpoint, body)
+            return fastapi.responses.JSONResponse(status_code=200, content=updated)
         else:
-            await astroidapi.surrealdb_handler.sync_local_files(f"{pathlib.Path(__file__).parent.resolve()}/endpoints")
-        return fastapi.responses.JSONResponse(status_code=200, content={"message": "Success."})
+            return fastapi.responses.JSONResponse(status_code=400, content={"message": "Invalid request. Missing endpoint or body."}))
     else:
         return fastapi.responses.JSONResponse(status_code=404, content={"detail": "Not found"})
 
