@@ -8,6 +8,7 @@ import pathlib
 import random
 import string
 import datetime
+import asyncio
 
 async def sync_local_files(folderpath: str, specific: bool = False):
     try:
@@ -164,8 +165,49 @@ async def overwrite_json(endpoint: int, json_data: dict):
         async with Surreal(config.SDB_URL) as db:
             await db.signin({"user": config.SDB_USER, "pass": config.SDB_PASS})
             await db.use(config.SDB_NAMESPACE, config.SDB_DATABASE)
-            await db.query(f"UPDATE endpoints:`{endpoint}` SET data = {json_data}")
-            return await db.query(f"SELECT * FROM endpoints:`{endpoint}`")
+            await db.query(f"UPDATE endpoints:`{endpoint}` CONTENT {json_data}")
+            async def set_nested_values_to_null(data, prefix="", endpoint_id=None, database=None):                
+                async def update_field(key_path):
+                    try:
+                        if "-" in key_path:
+                            parts = key_path.split('.')
+                            modified_parts = []
+                            for part in parts:
+                                if '-' in part:
+                                    modified_parts.append(f'`{part}`')
+                                else:
+                                    modified_parts.append(part)
+                            key_path = '.'.join(modified_parts)
+                        await database.query(f"UPDATE endpoints:`{endpoint_id}` SET {key_path} = null")
+                    except Exception as e:
+                        print(f"Error updating {key_path}: {e}")
+                
+                async def process_nested(obj, current_prefix="", depth=0):
+                    if depth > 6:  # Limit to sixth degree nesting
+                        return
+                        
+                    if isinstance(obj, dict):
+                        for key, value in obj.items():
+                            current_key = f"{current_prefix}.{key}" if current_prefix else key
+                            if isinstance(value, (dict, list)):
+                                await process_nested(value, current_key, depth + 1)
+                            else:
+                                if value is None:
+                                    await update_field(current_key)
+                    elif isinstance(obj, list):
+                        for i, item in enumerate(obj):
+                            current_key = f"{current_prefix}[{i}]"
+                            if isinstance(item, (dict, list)):
+                                await process_nested(item, current_key, depth + 1)
+                            else:
+                                if item is None:
+                                    await update_field(current_key)
+                
+                await process_nested(data, prefix)
+
+            await set_nested_values_to_null(json_data, "", endpoint, db)
+            ret = await db.query(f"SELECT * FROM endpoints:`{endpoint}`")
+            return ret[0]["result"][0]
     except Exception as e:
         raise errors.SurrealDBHandler.UpdateEndpointError(e)
 
