@@ -32,8 +32,9 @@ intents = nextcord.Intents.default()
 intents.message_content = True
 client = commands.Bot(command_prefix=config.COMMAND_PREFIX, intents=intents)
 
-# Create an aiohttp session
-session = aiohttp.ClientSession()
+# Create an aiohttp session placeholder
+session = None
+    
 
 async def send_iamup():
     async with aiohttp.ClientSession() as session:
@@ -63,12 +64,12 @@ async def activity_task():
 
 @client.event
 async def on_ready():
+    global session
+    session = aiohttp.ClientSession()
     await client.sync_all_application_commands()
     print(f"Logged in as {client.user} ({client.user.id})")
     client.loop.create_task(iamup_loop())
     client.loop.create_task(activity_task())
-    #while True:
-    #    async with aiohttp.ClientSession() as session:
     #        async with session.post(f"https://status.astroid.cc//monitor/iamup/discord") as r:
     #            if r.status == 200:
     #                print("Sent up status.")
