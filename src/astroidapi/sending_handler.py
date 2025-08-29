@@ -257,7 +257,7 @@ class SendingHandler():
                         payload = {
                             "username": message_author_name,
                             "content": message_content,
-                            "avatar_url": response_json["meta"]["message"]["author"]["avatar"]
+                            "avatarUrl": response_json["meta"]["message"]["author"]["avatar"]
                         }
                         if updated_json["meta"]["message"]["isReply"] is True:
                             reply_emoji_filtered = await emoji_handler.convert_message(updated_json["meta"]["message"]["reply"]["message"], updated_json["meta"]["sender"], "nerimity", endpoint)
