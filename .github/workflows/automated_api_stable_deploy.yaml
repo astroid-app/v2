@@ -47,7 +47,7 @@ jobs:
           script: |
             cd /root/astroid
             git pull origin main
-            cp -r /root/astroid/src/astroidapi /root/guildcord/src/
+            cp -r /root/astroid/src/astroidapi /root/guildcord/src
             cp -r /root/astroid/src/api.py /root/guildcord/src/api.py
             cp -r /root/astroid/.git /root/guildcord/.git
   
@@ -65,3 +65,4 @@ jobs:
           script: |
 
             sudo systemctl start astroidapi
+
