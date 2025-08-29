@@ -233,71 +233,134 @@ class SendingHandler():
                     response_json = updated_json
                     sender_channel = response_json["meta"]["sender-channel"]
                     discord_channels = response_json["config"]["channels"]["discord"]
-                    try:
-                        if sender_channel in discord_channels:
-                            channel_id = response_json["config"]["channels"]["nerimity"][discord_channels.index(sender_channel)]
-                        elif sender_channel in response_json["config"]["channels"]["guilded"]:
-                            channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["guilded"].index(sender_channel)]
-                        elif sender_channel in response_json["config"]["channels"]["revolt"]:
-                            channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["revolt"].index(sender_channel)]
-                        else:
-                            raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
-                    except IndexError:
-                        await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
-                        return True
-                    message_author_name = response_json["meta"]["message"]["author"]["name"]
-                    message_content = response_json["meta"]["message"].get("content")
-                    if message_content is not None and message_content != "":
-                        message_content = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "nerimity", endpoint)
-                    if updated_json["config"]["isbeta"] is True:
-                        headers = {
-
-                            "Authorization": f"{config.BETA_NERIMITY_TOKEN}",
-                        }
-                    else:
-                        headers = {
-                            "Authorization": f"{config.NERIMITY_TOKEN}",
-                        }
-                    print(channel_id)
-
-                    payload = {
-                        "content": f"**{message_author_name}**: {message_content}",
-                    }
-                    if updated_json["meta"]["message"]["isReply"] is True:
-                        reply_emoji_filtered = await emoji_handler.convert_message(updated_json["meta"]["message"]["reply"]["message"], updated_json["meta"]["sender"], "nerimity", endpoint)
-                        payload = {
-                            "content": f"> **{updated_json['meta']['message']['reply']['author']}**: {reply_emoji_filtered}\n\n**{message_author_name}**: {message_content}",
-                        }
-                    nerimityCdnFileId = None
-                    if attachments is not None:
-                        formdata = aiohttp.FormData()
+                    nerimity_webhooks = response_json["config"]["webhooks"]["nerimity"]
+                    if updated_json.get("config", {}).get("isbeta", {}) is True and len(nerimity_webhooks) > 0:
+                        print("Sending to Nerimity via webhook...")
                         try:
-                            if '../' in attachments[0].name or '..\\' in attachments[0].name:
-                                raise Exception("Invalid file path")
+                            if sender_channel in discord_channels:
+                                webhook_url = response_json["config"]["webhooks"]["nerimity"][discord_channels.index(sender_channel)]
+                            elif sender_channel in response_json["config"]["channels"]["guilded"]:
+                                webhook_url = response_json["config"]["webhooks"]["nerimity"][response_json["config"]["channels"]["guilded"].index(sender_channel)]
+                            elif sender_channel in response_json["config"]["channels"]["revolt"]:
+                                webhook_url = response_json["config"]["webhooks"]["nerimity"][response_json["config"]["channels"]["revolt"].index(sender_channel)]
                             else:
-                                formdata.add_field("f", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
-                                async with session.post("https://cdn.nerimity.com/upload", headers=headers, data=formdata) as r:
-                                    if r.ok:
-                                        nerimityCdnFileId = (await r.json())["fileId"]
-                                        async with session.post(f"https://cdn.nerimity.com/attachments/{int(channel_id)}/{nerimityCdnFileId}", headers=headers) as r:
-                                            if r.ok:
-                                                nerimityCdnFileId = (await r.json())["fileId"]
-                                                payload["nerimityCdnFileId"] = nerimityCdnFileId
-                                            else:
-                                                raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
-                                    else:
-                                        raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
-                        except Exception as e:
-                            print("Error uploading attachment to nerimity: ", e)
-                            pass
-                    r = await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=payload)
-                    print(f"Sent to nerimity. Response: {r.status}, {r.reason} {await r.text()}")
-                    await session.close()
-                    if attachments is not None:
-                        await surrealdb_handler.AttachmentProcessor.update_attachment(attachments[0].name.split("/")[-1].split(".")[0], sentby="nerimity")
-                    asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "nerimity"))
-                    print("Sent to nerimity")
-                    return True
+                                raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                        except IndexError:
+                            await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
+                            return True
+                        message_author_name = response_json["meta"]["message"]["author"]["name"]
+                        message_content = response_json["meta"]["message"].get("content")
+                        if message_content is not None and message_content != "":
+                            message_content = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "nerimity", endpoint)
+                        print(webhook_url)
+
+                        payload = {
+                            "username": message_author_name,
+                            "content": message_content,
+                            "avatar_url": response_json["meta"]["message"]["author"]["avatar"]
+                        }
+                        if updated_json["meta"]["message"]["isReply"] is True:
+                            reply_emoji_filtered = await emoji_handler.convert_message(updated_json["meta"]["message"]["reply"]["message"], updated_json["meta"]["sender"], "nerimity", endpoint)
+                            payload = {
+                                "content": f"> **{updated_json['meta']['message']['reply']['author']}**: {reply_emoji_filtered}\n\n{message_content}",
+                            }
+                        nerimityCdnFileId = None
+                        if attachments is not None:
+                            formdata = aiohttp.FormData()
+                            try:
+                                if '../' in attachments[0].name or '..\\' in attachments[0].name:
+                                    raise Exception("Invalid file path")
+                                else:
+                                    formdata.add_field("f", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
+                                    async with session.post("https://cdn.nerimity.com/upload", headers=headers, data=formdata) as r:
+                                        if r.ok:
+                                            nerimityCdnFileId = (await r.json())["fileId"]
+                                            async with session.post(f"https://cdn.nerimity.com/attachments/{int(channel_id)}/{nerimityCdnFileId}", headers=headers) as r:
+                                                if r.ok:
+                                                    nerimityCdnFileId = (await r.json())["fileId"]
+                                                    payload["nerimityCdnFileId"] = nerimityCdnFileId
+                                                else:
+                                                    raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
+                                        else:
+                                            raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
+                            except Exception as e:
+                                print("Error uploading attachment to nerimity: ", e)
+                                pass
+                        r = await session.post(webhook_url, data=payload)
+                        print(f"Sent to nerimity. Response: {r.status}, {r.reason} {await r.text()}")
+                        await session.close()
+                        if attachments is not None:
+                            await surrealdb_handler.AttachmentProcessor.update_attachment(attachments[0].name.split("/")[-1].split(".")[0], sentby="nerimity")
+                        asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "nerimity"))
+                        print("Sent to nerimity")
+                        return True
+                    else:
+                        print("Sending to Nerimity via API...")
+                        try:
+                            if sender_channel in discord_channels:
+                                channel_id = response_json["config"]["channels"]["nerimity"][discord_channels.index(sender_channel)]
+                            elif sender_channel in response_json["config"]["channels"]["guilded"]:
+                                channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["guilded"].index(sender_channel)]
+                            elif sender_channel in response_json["config"]["channels"]["revolt"]:
+                                channel_id = response_json["config"]["channels"]["nerimity"][response_json["config"]["channels"]["revolt"].index(sender_channel)]
+                            else:
+                                raise errors.SendingError.ChannelNotFound(f'The channel {sender_channel} ({updated_json["meta"]["sender"]}) does not seem to be a registered channel on other platforms.')
+                        except IndexError:
+                            await surrealdb_handler.QueueHandler.remove_from_queue(endpoint, updated_json)
+                            return True
+                        message_author_name = response_json["meta"]["message"]["author"]["name"]
+                        message_content = response_json["meta"]["message"].get("content")
+                        if message_content is not None and message_content != "":
+                            message_content = await emoji_handler.convert_message(message_content, updated_json["meta"]["sender"], "nerimity", endpoint)
+                        if updated_json["config"]["isbeta"] is True:
+                            headers = {
+
+                                "Authorization": f"{config.BETA_NERIMITY_TOKEN}",
+                            }
+                        else:
+                            headers = {
+                                "Authorization": f"{config.NERIMITY_TOKEN}",
+                            }
+                        print(channel_id)
+
+                        payload = {
+                            "content": f"**{message_author_name}**: {message_content}",
+                        }
+                        if updated_json["meta"]["message"]["isReply"] is True:
+                            reply_emoji_filtered = await emoji_handler.convert_message(updated_json["meta"]["message"]["reply"]["message"], updated_json["meta"]["sender"], "nerimity", endpoint)
+                            payload = {
+                                "content": f"> **{updated_json['meta']['message']['reply']['author']}**: {reply_emoji_filtered}\n\n**{message_author_name}**: {message_content}",
+                            }
+                        nerimityCdnFileId = None
+                        if attachments is not None:
+                            formdata = aiohttp.FormData()
+                            try:
+                                if '../' in attachments[0].name or '..\\' in attachments[0].name:
+                                    raise Exception("Invalid file path")
+                                else:
+                                    formdata.add_field("f", open(os.path.abspath(attachments[0].name), "rb"), filename=attachments[0].name.split("/")[-1], content_type=f"image/{attachments[0].name.split('.')[-1]}")
+                                    async with session.post("https://cdn.nerimity.com/upload", headers=headers, data=formdata) as r:
+                                        if r.ok:
+                                            nerimityCdnFileId = (await r.json())["fileId"]
+                                            async with session.post(f"https://cdn.nerimity.com/attachments/{int(channel_id)}/{nerimityCdnFileId}", headers=headers) as r:
+                                                if r.ok:
+                                                    nerimityCdnFileId = (await r.json())["fileId"]
+                                                    payload["nerimityCdnFileId"] = nerimityCdnFileId
+                                                else:
+                                                    raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
+                                        else:
+                                            raise errors.SendingError.SendFromNerimiryError(f"Failed to upload attachment to nerimity. Response: {r.status}, {r.reason}")
+                            except Exception as e:
+                                print("Error uploading attachment to nerimity: ", e)
+                                pass
+                        r = await session.post(f"https://nerimity.com/api/channels/{int(channel_id)}/messages", headers=headers, data=payload)
+                        print(f"Sent to nerimity. Response: {r.status}, {r.reason} {await r.text()}")
+                        await session.close()
+                        if attachments is not None:
+                            await surrealdb_handler.AttachmentProcessor.update_attachment(attachments[0].name.split("/")[-1].split(".")[0], sentby="nerimity")
+                        asyncio.create_task(read_handler.ReadHandler.mark_read(endpoint, "nerimity"))
+                        print("Sent to nerimity")
+                        return True
             else:
                 return False
         except Exception as e:
