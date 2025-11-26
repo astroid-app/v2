@@ -26,7 +26,7 @@ client = commands.Bot(command_prefix=config.COMMAND_PREFIX)
 
 client.help_command = None
 
-
+shutdown_notice = "\n\nNOTICE: Guilded shuts down on December 19th, 2025. This platform for Astroid may not recieve updates anymore. https://www.guilded.gg/blog/guilded-shut-down-12-19-25"
 
 async def send_iamup():
     async with aiohttp.ClientSession() as session:
@@ -167,33 +167,33 @@ async def register(ctx: commands.Context, endpoint):
                 try:
                     _endpoint = data["discord"]
                     if _endpoint == endpoint:
-                        await ctx.send("Endpoint already registered.")
+                        await ctx.send(f"Endpoint already registered.{shutdown_notice}")
                         return
                     else:
-                        await ctx.send("This server is registered with another endpoint. For further assistance, please contact the support server.")
+                        await ctx.send(f"This server is registered with another endpoint. For further assistance, please contact the support server.{shutdown_notice}")
                 except KeyError:
                     async with aiohttp.ClientSession() as session: 
                         async with session.post(f"https://api.astroid.cc/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
-                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
+                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}")
                             else:
-                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`{shutdown_notice}")
                 except IndexError:
                     async with aiohttp.ClientSession() as session: 
                         async with session.post(f"https://api.astroid.cc/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
-                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
+                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}")
                             else:
-                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`{shutdown_notice}")
                 except TypeError:
                     async with aiohttp.ClientSession() as session: 
                         async with session.post(f"https://api.astroid.cc/createendpoint/guilded?endpoint={endpoint}&id={ctx.message.server_id}&token={config.MASTER_TOKEN}") as response:
                             if response.status == 200:
-                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}")
+                                await ctx.send(f"Registered endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}")
                             else:
-                                await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                                await ctx.send(f"Oops, something went wrong: `{data['message']}`{shutdown_notice}")
                 except Exception as e:
-                    await ctx.send(f"An error occurred while trying to register the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
+                    await ctx.send(f"An error occurred while trying to register the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`{shutdown_notice}")
 
     try:
         channel_id = ctx.channel.id
@@ -203,16 +203,16 @@ async def register(ctx: commands.Context, endpoint):
             async with session.post(f"https://api.astroid.cc/update/{endpoint}?channel_guilded={channel_id}&webhook_guilded={channel_webhook_url}&token={config.MASTER_TOKEN}") as response:
                 data = await response.json()
                 if response.ok:
-                    await ctx.send(f"Updated endpoint: https://api.astroid.cc/{endpoint}")
+                    await ctx.send(f"Updated endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}")
                 else:
-                    await ctx.send(f"Oops, something went wrong: `{data['message']}`")
+                    await ctx.send(f"Oops, something went wrong: `{data['message']}`{shutdown_notice}")
     except Exception as e:
-        await ctx.send(f"An error occurred while trying to update the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`")
+        await ctx.send(f"An error occurred while trying to update the endpoint. Please report this in the [Support Server](https://guilded.gg/astroid). \n\n`{e}`{shutdown_notice}")
 
 @client.command()
 async def help(ctx):
     embed = guilded.Embed(
-        title="astroid", description="API Docs: https://api.astroid.cc/docs"
+        title="astroid", description=f"API Docs: https://api.astroid.cc/docs{shutdown_notice}"
     )
     embed.add_field(
         name="register",
@@ -250,7 +250,7 @@ async def set_log(ctx, endpoint, channelid):
         )
         if r.ok:
             await ctx.send(
-                f"Updated endpoint: https://api.astroid.cc/{endpoint}"
+                f"Updated endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}"
             )
         else:
             await ctx.send(f"{r['message']}")
@@ -267,7 +267,7 @@ async def allow(ctx, endpoint, allowid):
         )
         if r.ok:
             await ctx.send(
-                f"Updated endpoint: https://api.astroid.cc/{endpoint}"
+                f"Updated endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}"
             )
         else:
             await ctx.send(f"{r['message']}")
@@ -285,7 +285,7 @@ async def add_bridge(ctx, endpoint):
         )
         if r.ok:
             await ctx.send(
-                f"Updated endpoint: https://api.astroid.cc/{endpoint}"
+                f"Updated endpoint: https://api.astroid.cc/{endpoint}{shutdown_notice}"
             )
         else:
             await ctx.send(f"{r['message']}")
